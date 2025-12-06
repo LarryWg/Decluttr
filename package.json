@@ -1,0 +1,19 @@
+{
+  "name": "decluttr",
+  "version": "1.0.0",
+  "description": "\"Chrome Web Extension\"",
+  "main": "App.js",
+  "scripts": {
+    "test": "npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LarryWg/Decluttr.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LarryWg/Decluttr/issues"
+  },
+  "homepage": "https://github.com/LarryWg/Decluttr#readme"
+}
