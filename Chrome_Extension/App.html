@@ -1,44 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Hello</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Navigation Page</title>
+    
     <style>
-        /* Simple styling for better presentation */
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        /* 1. Define the size of the main display (Viewport) */
+        html, body {
+            /* Ensures the entire screen is covered and removes default browser margins */
+            width: 100vw;
+            height: 100vh;
             margin: 0;
-            background-color: #f4f4f9;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
-        .container {
-            padding: 20px;
+
+        /* 2. Define the Main Content Wrapper Size and Layout */
+        .main-content-wrapper {
+            width: 90%; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 30px;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center;
         }
         .button-link {
-            display: block; /* Makes the anchor tag take full width */
-            margin: 10px 0;
-            text-decoration: none; /* Removes the underline from the link */
+            display: block;
+            margin: 15px 0;
+            text-decoration: none;
         }
         .button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            width: 100%; /* Makes the button fill its container */
-            text-align: center;
-            transition: background-color 0.3s ease;
+            width: 100%;
         }
         .button:hover {
-            background-color: #0056b3;
+            background-color: #0051ff;
         }
     </style>
 </head>
