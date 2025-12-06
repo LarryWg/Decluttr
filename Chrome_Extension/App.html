@@ -6,27 +6,41 @@
     <title>Main Navigation Page</title>
     
     <style>
-        /* 1. Define the size of the main display (Viewport) */
+        /* --- 1. Global Reset and Viewport Definition --- */
         html, body {
-            /* Ensures the entire screen is covered and removes default browser margins */
-            width: 400vh;
+            width: 300vw;
             height: 100vh;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            background-color: #ffffff;
+            font-family: Arial, sans-serif; 
+            background-color: #f4f4f9; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* 2. Define the Main Content Wrapper Size and Layout */
         .main-content-wrapper {
             width: 90%; 
             max-width: 800px; 
             margin: 50px auto; 
             padding: 30px;
-            background: white;
+            background: white; 
             border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
+
+        .container {
+            width: 90%; 
+            max-width: 500px; 
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- 3. Button Styling --- */
         .button-link {
             display: block;
             margin: 15px 0;
@@ -36,14 +50,16 @@
             padding: 12px 20px;
             font-size: 18px;
             font-weight: bold;
-            color: rgb(0, 4, 255);
+            background-color: #007bff; 
+            color: white; 
             border: none;
             border-radius: 8px;
             cursor: pointer;
             width: 100%;
+            transition: background-color 0.3s ease;
         }
         .button:hover {
-            background-color: #0051ff;
+            background-color: #0056b3; 
         }
     </style>
 </head>
