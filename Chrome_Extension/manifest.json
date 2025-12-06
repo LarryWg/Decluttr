@@ -1,9 +1,11 @@
 {
-  "name": "Decluttr",
-  "description": "Base Level Extension",
-  "version": "1.0",
   "manifest_version": 3,
+  "name": "Decluttr",
+  "version": "1.0",
+  "description": "Email cleanup, AI summaries, focus mode & productivity tools.",
+  "permissions": ["activeTab", "storage", "scripting"],
   "action": {
-    "default_popup": "App.html"
+    "default_popup": "popup/App.html",
+    "default_title": "Decluttr"
   }
 }
