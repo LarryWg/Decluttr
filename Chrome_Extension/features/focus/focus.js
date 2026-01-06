@@ -14,13 +14,13 @@ backBtn.addEventListener("click", () => {
 //MediaPipe Face Detector
 async function initMediaPipe() {
     try {
-        // Check if the bridge has finished its job
+        // Wait for bridge.js to finish
         if (!window.FilesetResolver || !window.FaceDetector) {
-            console.log("Waiting for bridge...");
-            setTimeout(initMediaPipe, 100); 
+            setTimeout(initMediaPipe, 100);
             return;
         }
 
+        // Initialize from the local lib folder
         const vision = await window.FilesetResolver.forVisionTasks("lib");
 
         faceDetector = await window.FaceDetector.createFromOptions(vision, {
@@ -31,10 +31,10 @@ async function initMediaPipe() {
             runningMode: "VIDEO"
         });
 
-        console.log("MediaPipe Face Detector Initialized");
+        console.log("AI Detector Ready!");
         renderLoop();
     } catch (err) {
-        console.error("Failed to initialize MediaPipe:", err);
+        console.error("Initialization error:", err);
     }
 }
 
@@ -53,30 +53,34 @@ async function renderLoop() {
     requestAnimationFrame(renderLoop);
 }
 
-// 4. Draw Bounding Box on Canvas
+//Draw square around face
 function drawResults(detections) {
     const ctx = canvas.getContext("2d");
-    
-    // Synchronize canvas size with displayed video size
+
+    // 1. Force the canvas drawing resolution to match the VISUAL size of the video
     canvas.width = video.clientWidth;
     canvas.height = video.clientHeight;
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     detections.forEach(detection => {
         const { originX, originY, width, height } = detection.boundingBox;
-        
-        // Scale normalized AI coordinates to match current display dimensions
+
+        // 2. Calculate the ratio between the REAL video size and the DISPLAYED size
         const scaleX = video.clientWidth / video.videoWidth;
         const scaleY = video.clientHeight / video.videoHeight;
 
-        // Draw the red bounding box
-        ctx.strokeStyle = "#FF0000"; 
+        //to fix the box being slightly too low
+        const verticalOffset = height * 0.4;
+
+        ctx.strokeStyle = "#FF0000";
         ctx.lineWidth = 3;
+
+        // 3. Draw the box by multiplying coordinates by the scale
         ctx.strokeRect(
-            originX * scaleX, 
-            originY * scaleY, 
-            width * scaleX, 
+            originX * scaleX,
+            (originY - verticalOffset) * scaleY,
+            width * scaleX,
             height * scaleY
         );
     });
