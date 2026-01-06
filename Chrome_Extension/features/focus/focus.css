@@ -9,8 +9,18 @@ body {
 }
 
 .container {
+    position: relative; 
+    width: 350px;       
+    margin: 0 auto;
+}
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 350px;
-    padding: 20px;
+    height: 100%;
+    pointer-events: none; 
+    z-index: 10;          
 }
 
 .camera-container {
@@ -34,9 +44,8 @@ body {
     background-color: #0056b3;
 }
 
-.camera-feed {
-    width: 150px;
+#camera-feed {
+    width: 100%;
     height: auto;
-    border-radius: 4px;
-    background-color: #000; /*colour while camera is loading*/
+    display: block;
 }

@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Email Assistant</title>
+    <title>Focus Mode</title>
     <link rel="stylesheet" href="focus.css">
 </head>
 <body>
-    <div class="camera-container">
-        <video id="camera-feed" autoplay playsinline></video> 
-        <button class="backButton" id="backBtn">Back</button>
+    <div class="container" style="position: relative;">
+    <video id="camera-feed" autoplay playsinline></video>
+    <canvas id="overlay"></canvas>
+    <button class="backButton" id="backBtn">Back</button>
     </div>
 
-    <script src="focus.js"></script>
+    <script src="bridge.js" type="module"></script>
+    <script src="focus.js" type="module"></script>
 </body>
 </html>
