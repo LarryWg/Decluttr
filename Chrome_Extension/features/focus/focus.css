@@ -13,6 +13,10 @@ body {
     padding: 20px;
 }
 
+.camera-container {
+    width: 650px;
+    padding: 20px;
+}
 
 .button, .subButton, .backButton {
     width: 100%;
@@ -30,3 +34,9 @@ body {
     background-color: #0056b3;
 }
 
+.camera-feed {
+    width: 150px;
+    height: auto;
+    border-radius: 4px;
+    background-color: #000; /*colour while camera is loading*/
+}

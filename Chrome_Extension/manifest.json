@@ -3,7 +3,7 @@
   "name": "Decluttr",
   "version": "1.0",
   "description": "Email cleanup, AI summaries, focus mode & productivity tools.",
-  "permissions": ["activeTab", "storage", "scripting"],
+  "permissions": ["activeTab", "storage", "scripting", "videoCapture"],
   "action": {
     "default_popup": "popup/App.html",
     "default_title": "Decluttr"
