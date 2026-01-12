@@ -2,14 +2,102 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Assistant</title>
     <link rel="stylesheet" href="email.css">
 </head>
 <body>
     <div class="container">
-        <button class="backButton" id="backBtn">Back</button>
+        <!-- Header with Back button and Settings -->
+        <div class="header">
+            <button class="backButton" id="backBtn">← Back</button>
+            <h2>Email Assistant</h2>
+            <button class="settingsButton" id="settingsBtn" title="Settings">⚙️</button>
+        </div>
+
+        <!-- Settings Panel (hidden by default) -->
+        <div class="settingsPanel" id="settingsPanel">
+            <h3>Settings</h3>
+            <div class="settingItem">
+                <label for="apiKeyInput">OpenAI API Key:</label>
+                <input type="password" id="apiKeyInput" placeholder="sk-..." />
+                <button class="saveButton" id="saveApiKeyBtn">Save</button>
+            </div>
+            <div class="settingItem">
+                <label for="backendUrlInput">Backend URL:</label>
+                <input type="text" id="backendUrlInput" value="http://localhost:3000" placeholder="http://localhost:3000" />
+                <button class="saveButton" id="saveBackendUrlBtn">Save</button>
+            </div>
+            <div class="settingItem">
+                <label>OAuth Redirect URI (for Google Cloud Console):</label>
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <input type="text" id="redirectUriDisplay" readonly style="flex: 1; font-size: 11px; padding: 6px;" />
+                    <button class="saveButton" id="copyRedirectUriBtn" style="width: auto; padding: 6px 12px;">Copy</button>
+                </div>
+            </div>
+            <div class="settingItem">
+                <button class="logoutButton" id="logoutBtn">Logout from Gmail</button>
+            </div>
+        </div>
+
+        <!-- Auth Section (shown when not authenticated) -->
+        <div class="authSection" id="authSection">
+            <p>Connect your Gmail account to get started</p>
+            <button class="button primary" id="connectGmailBtn">Connect Gmail</button>
+            <p class="infoText">You'll be asked to authorize Gmail read-only access</p>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loadingSpinner" id="loadingSpinner" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading emails...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="errorMessage" id="errorMessage" style="display: none;"></div>
+
+        <!-- Success Message -->
+        <div class="successMessage" id="successMessage" style="display: none;"></div>
+
+        <!-- Email List Section -->
+        <div class="emailListSection" id="emailListSection" style="display: none;">
+            <div class="emailListHeader">
+                <span id="accountEmail" class="accountEmail"></span>
+                <button class="button small" id="refreshBtn">Refresh</button>
+            </div>
+            <div class="emailList" id="emailList">
+                <!-- Email cards will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="emptyState" id="emptyState" style="display: none;">
+            <p>No emails found</p>
+        </div>
     </div>
 
+    <!-- Email Detail Modal (for expanded email view) -->
+    <div class="emailModal" id="emailModal" style="display: none;">
+        <div class="modalContent">
+            <button class="closeButton" id="closeModalBtn">×</button>
+            <div class="modalHeader">
+                <h3 id="modalSubject"></h3>
+                <div class="modalMeta">
+                    <span id="modalSender"></span>
+                    <span id="modalDate"></span>
+                </div>
+            </div>
+            <div class="modalBody">
+                <div class="emailContent" id="modalBodyContent"></div>
+                <div class="aiResults" id="modalAiResults">
+                    <!-- AI results will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="gmail-auth.js"></script>
     <script src="email.js"></script>
 </body>
 </html>

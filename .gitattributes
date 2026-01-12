@@ -1,0 +1,11 @@
+# Ensure line endings are consistent
+* text=auto
+
+# Binary files
+*.wasm binary
+*.task binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+
