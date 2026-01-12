@@ -158,6 +158,3 @@ Decluttr/
 - Check backend server logs for detailed error messages
 - Ensure email content is not empty or malformed
 
-## License
-
-ISC
