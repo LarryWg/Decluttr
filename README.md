@@ -22,15 +22,6 @@ cd backend
 npm install
 ```
 
-3. Create a `.env` file:
-```bash
-cp .env.example .env
-```
-
-4. Configure `.env`:
-   - `OPENAI_API_KEY`: Users provide their own API key via the extension UI
-   - `PORT`: Backend server port (default: 3000)
-
 5. Start the backend server:
 ```bash
 npm start
@@ -71,14 +62,14 @@ See [backend/README.md](backend/README.md) for detailed backend API documentatio
    - Click "Load unpacked"
    - Select the `Chrome_Extension` directory
 
-3. **Configure Settings**:
+3. **Configure Settings** (Optional):
 
    - Click the Decluttr extension icon in Chrome toolbar
    - Click "Email Assistant"
    - Click the settings (⚙️) button
-   - Enter your OpenAI API key (starts with `sk-`)
    - Optionally update the backend URL if running on a different port/host
    - Click "Save"
+   
 
 4. **Connect Gmail**:
 
@@ -130,15 +121,7 @@ Decluttr/
     └── utils/              # Utility functions
 ```
 
-## Security Notes
 
-- OpenAI API keys are stored in Chrome local storage (user-provided)
-- Gmail OAuth tokens are stored securely by Chrome Identity API
-- Backend never stores API keys or user data
-- All API calls are made client-side (extension) to backend, then to external APIs
-- CORS is configured to allow extension origins only
-
-## Troubleshooting
 
 ### Backend Connection Issues
 
@@ -157,4 +140,3 @@ Decluttr/
 - Verify OpenAI API key is valid and has credits
 - Check backend server logs for detailed error messages
 - Ensure email content is not empty or malformed
-

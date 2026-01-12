@@ -6,16 +6,13 @@
 // Configuration
 const DEFAULT_BACKEND_URL = 'http://localhost:3000';
 const MAX_EMAILS_TO_FETCH = 20;
-const STORAGE_KEY_API_KEY = 'openai_api_key';
 const STORAGE_KEY_BACKEND_URL = 'backend_url';
 
 // DOM Element References
 const backBtn = document.getElementById('backBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsPanel = document.getElementById('settingsPanel');
-const apiKeyInput = document.getElementById('apiKeyInput');
 const backendUrlInput = document.getElementById('backendUrlInput');
-const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const saveBackendUrlBtn = document.getElementById('saveBackendUrlBtn');
 const redirectUriDisplay = document.getElementById('redirectUriDisplay');
 const copyRedirectUriBtn = document.getElementById('copyRedirectUriBtn');
@@ -74,10 +71,6 @@ function setupEventListeners() {
         settingsPanel.style.display = isVisible ? 'none' : 'block';
     });
 
-    saveApiKeyBtn.addEventListener('click', async () => {
-        await saveApiKey();
-    });
-
     saveBackendUrlBtn.addEventListener('click', async () => {
         await saveBackendUrl();
     });
@@ -130,10 +123,7 @@ function setupEventListeners() {
 
 async function loadSettings() {
     return new Promise((resolve) => {
-        chrome.storage.local.get([STORAGE_KEY_API_KEY, STORAGE_KEY_BACKEND_URL], (result) => {
-            if (result[STORAGE_KEY_API_KEY]) {
-                apiKeyInput.value = result[STORAGE_KEY_API_KEY];
-            }
+        chrome.storage.local.get([STORAGE_KEY_BACKEND_URL], (result) => {
             if (result[STORAGE_KEY_BACKEND_URL]) {
                 backendUrlInput.value = result[STORAGE_KEY_BACKEND_URL];
             } else {
@@ -153,32 +143,6 @@ async function loadSettings() {
             resolve();
         });
     });
-}
-
-async function saveApiKey() {
-    const apiKey = apiKeyInput.value.trim();
-    
-    if (!apiKey) {
-        showError('API key cannot be empty');
-        return;
-    }
-
-    if (!apiKey.startsWith('sk-')) {
-        showError('Invalid OpenAI API key format (should start with sk-)');
-        return;
-    }
-
-    try {
-        await chrome.storage.local.set({ [STORAGE_KEY_API_KEY]: apiKey });
-        showSuccess('API key saved successfully');
-        
-        // Hide settings panel after a short delay
-        setTimeout(() => {
-            settingsPanel.style.display = 'none';
-        }, 1500);
-    } catch (error) {
-        showError('Failed to save API key: ' + error.message);
-    }
 }
 
 async function saveBackendUrl() {
@@ -207,14 +171,6 @@ async function saveBackendUrl() {
     } catch (error) {
         showError('Failed to save backend URL: ' + error.message);
     }
-}
-
-async function getStoredApiKey() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([STORAGE_KEY_API_KEY], (result) => {
-            resolve(result[STORAGE_KEY_API_KEY] || null);
-        });
-    });
 }
 
 async function getBackendUrl() {
@@ -262,7 +218,23 @@ async function handleGmailConnect() {
         hideError();
         hideSuccess();
 
-        // Get auth token (this will trigger OAuth flow if needed)
+        // Clear any existing token to force account selection
+        // This ensures users can choose which account to use
+        const existingToken = await new Promise((resolve) => {
+            chrome.storage.local.get(['gmail_access_token'], (result) => {
+                resolve(result.gmail_access_token || null);
+            });
+        });
+        
+        if (existingToken) {
+            // Remove cached token to force account selection
+            chrome.identity.removeCachedAuthToken({ token: existingToken }, () => {
+                // Continue regardless of result
+            });
+            await chrome.storage.local.remove(['gmail_access_token', 'gmail_account_email']);
+        }
+
+        // Get auth token (this will trigger OAuth flow with account selection)
         const token = await getAuthToken();
         
         if (!token) {
@@ -488,11 +460,6 @@ function stripHtml(html) {
  * @returns {Promise<Object>} AI analysis results
  */
 async function processEmailWithAI(email) {
-    const apiKey = await getStoredApiKey();
-    if (!apiKey) {
-        throw new Error('OpenAI API key not set. Please configure it in settings.');
-    }
-
     const backendUrl = await getBackendUrl();
     const url = `${backendUrl}/api/email/summarize`;
 
@@ -503,8 +470,7 @@ async function processEmailWithAI(email) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                emailContent: email.fullContent,
-                apiKey: apiKey
+                emailContent: email.fullContent
             })
         });
 

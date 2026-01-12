@@ -2,17 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decluttr</title>
     <link rel="stylesheet" href="App.css">
 </head>
 <body>
     <div class="container">
-        <h2>Decluttr</h2>
+        <div class="header-section">
+            <div class="header-content">
+                <!-- Logo placeholder - Replace logo-shape div with <img src="path/to/logo.png" alt="Decluttr"> when ready -->
+                <div class="logo-icon glass-logo">
+                    <div class="logo-shape"></div>
+                    <!-- Future: <img src="assets/logo.png" alt="Decluttr"> -->
+                </div>
+                <div class="header-text">
+                    <h1>Decluttr</h1>
+                    <p class="tagline">Your productivity companion</p>
+                </div>
+            </div>
+        </div>
 
-        <!-- Original style buttons -->
-        <button class="button" id="emailBtn">Email Assistant</button>
-        <button class="button" id="linkedinBtn">LinkedIn</button>
-        <button class="button" id="focusBtn">Focus Mode Webcam</button>
+        <div class="features-grid">
+            <button class="feature-button" id="emailBtn">
+                <div class="button-icon glass-icon">
+                    <div class="icon-shape email-icon"></div>
+                </div>
+                <div class="button-content">
+                    <span class="button-title">Email Assistant</span>
+                    <span class="button-subtitle">AI summaries & insights</span>
+                </div>
+            </button>
+
+            <button class="feature-button" id="linkedinBtn">
+                <div class="button-icon glass-icon">
+                    <div class="icon-shape linkedin-icon"></div>
+                </div>
+                <div class="button-content">
+                    <span class="button-title">LinkedIn</span>
+                    <span class="button-subtitle">Coming soon</span>
+                </div>
+            </button>
+
+            <button class="feature-button" id="focusBtn">
+                <div class="button-icon glass-icon">
+                    <div class="icon-shape focus-icon"></div>
+                </div>
+                <div class="button-content">
+                    <span class="button-title">Focus Mode</span>
+                    <span class="button-subtitle">Stay focused</span>
+                </div>
+            </button>
+        </div>
     </div>
 
     <script src="App.js"></script>
