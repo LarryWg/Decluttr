@@ -369,6 +369,55 @@ async function fetchEmailDetails(messageId, token) {
 }
 
 /**
+ * Recursively extract email body from payload (handles nested multipart structures)
+ * @param {Object} payload - Gmail API payload object
+ * @returns {string} Extracted email body
+ */
+function extractEmailBody(payload) {
+    // If this is a multipart structure, recurse into parts
+    if (payload.parts && payload.parts.length > 0) {
+        // Prefer text/plain, fallback to text/html
+        let textPart = null;
+        let htmlPart = null;
+        
+        for (const part of payload.parts) {
+            // Handle nested multipart (multipart/alternative, multipart/related, etc.)
+            if (part.mimeType && part.mimeType.startsWith('multipart/')) {
+                const nestedBody = extractEmailBody(part);
+                if (nestedBody) return nestedBody;
+            }
+            
+            // Collect text and HTML parts
+            if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+                textPart = part;
+            } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+                htmlPart = part;
+            }
+        }
+        
+        // Return plain text if available, otherwise HTML stripped
+        if (textPart) {
+            return decodeBase64(textPart.body.data);
+        } else if (htmlPart) {
+            const html = decodeBase64(htmlPart.body.data);
+            return stripHtml(html);
+        }
+    }
+    
+    // Single part email
+    if (payload.body && payload.body.data) {
+        if (payload.mimeType === 'text/plain') {
+            return decodeBase64(payload.body.data);
+        } else if (payload.mimeType === 'text/html') {
+            const html = decodeBase64(payload.body.data);
+            return stripHtml(html);
+        }
+    }
+    
+    return '';
+}
+
+/**
  * Parse Gmail API response into a structured email object
  * @param {Object} data - Raw Gmail API response
  * @returns {Object} Parsed email object
@@ -386,25 +435,38 @@ function parseEmailData(data) {
     const date = getHeader('Date') || new Date().toISOString();
     
     // Extract email body (prefer plain text, fallback to HTML)
-    let body = '';
-    const parts = data.payload.parts || [];
+    // Handle nested multipart structures recursively
+    let body = extractEmailBody(data.payload);
     
-    if (parts.length > 0) {
-        // Find plain text part
-        const textPart = parts.find(part => part.mimeType === 'text/plain');
-        if (textPart && textPart.body && textPart.body.data) {
-            body = decodeBase64(textPart.body.data);
-        } else {
-            // Fallback to HTML and strip tags
-            const htmlPart = parts.find(part => part.mimeType === 'text/html');
-            if (htmlPart && htmlPart.body && htmlPart.body.data) {
-                const html = decodeBase64(htmlPart.body.data);
-                body = stripHtml(html);
-            }
-        }
-    } else if (data.payload.body && data.payload.body.data) {
-        // Single part email
+    // If no body found, try direct body
+    if (!body && data.payload.body && data.payload.body.data) {
         body = decodeBase64(data.payload.body.data);
+    }
+
+    // Clean up HTML entities, zero-width characters, and metadata from body text
+    if (body) {
+        // Remove email IDs and hashes (32-40 character hex strings at start of lines)
+        body = body.replace(/^[0-9a-f]{32,40}\s+/gmi, '');
+        
+        // Clean HTML entities and zero-width characters
+        body = body.replace(/&zwnj;/gi, '');  // Zero Width Non-Joiner
+        body = body.replace(/&zwj;/gi, '');   // Zero Width Joiner
+        body = body.replace(/&nbsp;/gi, ' '); // Non-breaking space
+        body = body.replace(/&#8203;/g, '');   // Zero-width space
+        body = body.replace(/\u200B/g, '');   // Zero-width space (Unicode)
+        body = body.replace(/\u200C/g, '');   // Zero-width non-joiner (Unicode)
+        body = body.replace(/\u200D/g, '');   // Zero-width joiner (Unicode)
+        body = body.replace(/\uFEFF/g, '');   // Zero-width no-break space
+        
+        // Remove lines that look like IDs or hashes (standalone)
+        body = body.replace(/^[0-9a-f]{20,}\s*$/gmi, '');
+        
+        // Clean up multiple spaces and newlines (but preserve single spaces between words)
+        body = body.replace(/\n\s*\n/g, '\n'); // Multiple blank lines to single
+        body = body.replace(/[ \t]+/g, ' '); // Multiple spaces/tabs to single space
+        body = body.trim();
+        
+        // Note: URLs are preserved and will be converted to clickable links in the UI
     }
 
     // Combine subject and body for AI processing
@@ -424,30 +486,85 @@ function parseEmailData(data) {
 
 /**
  * Decode base64-encoded string (Gmail API uses URL-safe base64)
+ * Properly handles UTF-8 encoding
  * @param {string} base64String - Base64 encoded string
  * @returns {string} Decoded string
  */
 function decodeBase64(base64String) {
     try {
         // Gmail API uses URL-safe base64, convert to standard base64
-        const standardBase64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
-        const decoded = atob(standardBase64);
-        return decoded;
+        let standardBase64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
+        
+        // Add padding if needed
+        const padding = 4 - (standardBase64.length % 4);
+        if (padding !== 4) {
+            standardBase64 += '='.repeat(padding);
+        }
+        
+        // Decode base64 to binary string
+        const binaryString = atob(standardBase64);
+        
+        // Convert binary string (Latin-1) to UTF-8 string
+        // Use TextDecoder for proper UTF-8 decoding (available in Chrome extensions)
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Use TextDecoder to properly decode UTF-8
+        const decoder = new TextDecoder('utf-8');
+        return decoder.decode(bytes);
     } catch (error) {
         console.error('Base64 decode error:', error);
-        return '';
+        // Fallback: try simple decode without UTF-8 handling
+        try {
+            const standardBase64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
+            return atob(standardBase64);
+        } catch (fallbackError) {
+            console.error('Fallback decode also failed:', fallbackError);
+            return '';
+        }
     }
 }
 
 /**
- * Strip HTML tags from string (simple implementation)
+ * Strip HTML tags from string and clean up HTML entities and zero-width characters
  * @param {string} html - HTML string
  * @returns {string} Plain text
  */
 function stripHtml(html) {
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
+    let text = tmp.textContent || tmp.innerText || '';
+    
+    // Clean up HTML entities that might not have been decoded
+    text = decodeHtmlEntities(text);
+    
+    // Remove zero-width characters and entities
+    text = text.replace(/&zwnj;/gi, '');  // Zero Width Non-Joiner
+    text = text.replace(/&zwj;/gi, '');   // Zero Width Joiner
+    text = text.replace(/&nbsp;/gi, ' '); // Non-breaking space (convert to regular space)
+    text = text.replace(/&#8203;/g, '');  // Zero-width space (numeric entity)
+    text = text.replace(/\u200B/g, '');   // Zero-width space (Unicode)
+    text = text.replace(/\u200C/g, '');   // Zero-width non-joiner (Unicode)
+    text = text.replace(/\u200D/g, '');   // Zero-width joiner (Unicode)
+    text = text.replace(/\uFEFF/g, '');   // Zero-width no-break space
+    
+    // Clean up multiple spaces
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
+}
+
+/**
+ * Decode HTML entities to their actual characters
+ * @param {string} str - String with HTML entities
+ * @returns {string} Decoded string
+ */
+function decodeHtmlEntities(str) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = str;
+    return tmp.textContent || tmp.innerText || str;
 }
 
 // ============================================================================
@@ -673,7 +790,8 @@ function showEmailModal(email) {
     modalSubject.textContent = email.subject;
     modalSender.textContent = `From: ${email.from}`;
     modalDate.textContent = `Date: ${formatDate(email.date)}`;
-    modalBodyContent.textContent = email.body;
+    // Convert URLs to clickable links with domain names
+    modalBodyContent.innerHTML = convertUrlsToLinks(email.body);
 
     // Check for cached AI results
     const cachedResults = emailCache.get(email.id);
@@ -783,4 +901,42 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * Convert URLs in text to clickable links with domain names as text
+ * @param {string} text - Text that may contain URLs
+ * @returns {string} HTML with clickable links
+ */
+function convertUrlsToLinks(text) {
+    if (!text) return '';
+    
+    // Escape HTML to prevent XSS
+    const escaped = escapeHtml(text);
+    
+    // URL regex pattern (matches http://, https://, and www.)
+    const urlRegex = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+    
+    return escaped.replace(urlRegex, (url) => {
+        // Ensure URL has protocol
+        let fullUrl = url;
+        if (url.startsWith('www.')) {
+            fullUrl = 'https://' + url;
+        }
+        
+        try {
+            // Extract domain name from URL
+            const urlObj = new URL(fullUrl);
+            let domain = urlObj.hostname;
+            
+            // Remove www. prefix for cleaner display
+            domain = domain.replace(/^www\./i, '');
+            
+            // Create clickable link with domain name as text
+            return `<a href="${escapeHtml(fullUrl)}" target="_blank" rel="noopener noreferrer" class="emailLink">${escapeHtml(domain)}</a>`;
+        } catch (e) {
+            // If URL parsing fails, just escape and return the original
+            return escapeHtml(url);
+        }
+    });
 }
