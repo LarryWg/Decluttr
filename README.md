@@ -127,7 +127,7 @@ Decluttr/
 
 - Ensure the backend server is running (`npm start` in backend directory)
 - Check that the backend URL in extension settings matches your server URL
-- Verify CORS setting in backend allow requests from extension
+- Verify CORS setting in backend allow request  s from extension
 
 ### Gmail Authentication Issues
 
