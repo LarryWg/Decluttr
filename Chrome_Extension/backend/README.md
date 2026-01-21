@@ -15,7 +15,7 @@ cp .env.example .env
 ```
 
 3. Configure environment variables in `.env`:
-   - `OPENAI_API_KEY`: Your OpenAI API key (users will provide their own via extension)
+   - `OPENAI_API_KEY`: **REQUIRED** - Your OpenAI API key (used for all AI requests)
    - `PORT`: Server port (default: 3000)
    - `BACKEND_URL`: Backend URL (default: http://localhost:3000)
 
@@ -34,10 +34,11 @@ Generate AI summary, category, and unsubscribe detection for an email.
 **Request:**
 ```json
 {
-  "emailContent": "Email subject and body text...",
-  "apiKey": "sk-..."
+  "emailContent": "Email subject and body text..."
 }
 ```
+
+**Note:** OpenAI API key is configured server-side via `OPENAI_API_KEY` environment variable.
 
 **Response:**
 ```json
@@ -55,10 +56,11 @@ Categorize an email.
 **Request:**
 ```json
 {
-  "emailContent": "Email subject and body text...",
-  "apiKey": "sk-..."
+  "emailContent": "Email subject and body text..."
 }
 ```
+
+**Note:** OpenAI API key is configured server-side via `OPENAI_API_KEY` environment variable.
 
 **Response:**
 ```json
@@ -99,8 +101,10 @@ Health check endpoint.
 
 ## Notes
 
-- The OpenAI API key is provided by users via the Chrome Extension UI
+- **OpenAI API key is configured server-side** via `OPENAI_API_KEY` environment variable
+- All users share the same OpenAI API key (configured on the server)
 - All endpoints validate input and return appropriate error messages
 - CORS is enabled for Chrome Extension origins
 - Rate limiting should be added in production
+- Make sure to set `OPENAI_API_KEY` in your `.env` file before starting the server
 

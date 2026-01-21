@@ -1,820 +1,421 @@
 /**
- * Email Assistant - Main JavaScript
- * Handles Gmail API integration, backend API calls, and UI management
+ * Email Assistant - Main Controller
+ * Orchestrates all services and controllers
  */
+import { DOMReferences } from './utils/domUtils.js';
+import { EmailRepository } from './repositories/EmailRepository.js';
+import { GmailApiService } from './services/GmailApiService.js';
+import { EmailParserService } from './services/EmailParserService.js';
+import { BackendApiService } from './services/BackendApiService.js';
+import { EmailClassificationService } from './services/EmailClassificationService.js';
+import { UnsubscribeService } from './services/UnsubscribeService.js';
+import { SettingsService } from './services/SettingsService.js';
+import { UIController } from './controllers/UIController.js';
+import { EventController } from './controllers/EventController.js';
+import { AUTO_CATEGORIZE_ON_LOAD, DEFAULT_INBOX, INBOX_CATEGORIES } from './config/constants.js';
 
-// Configuration
-const DEFAULT_BACKEND_URL = 'http://localhost:3000';
-const MAX_EMAILS_TO_FETCH = 20;
-const STORAGE_KEY_API_KEY = 'openai_api_key';
-const STORAGE_KEY_BACKEND_URL = 'backend_url';
+/**
+ * Main Email Controller
+ */
+class EmailController {
+    constructor() {
+        // Initialize DOM references
+        this.domRefs = new DOMReferences();
+        
+        // Initialize repository
+        this.emailRepository = new EmailRepository();
+        
+        // Initialize services
+        this.emailParserService = new EmailParserService();
+        this.gmailApiService = new GmailApiService();
+        this.settingsService = new SettingsService(this.domRefs);
+        this.backendApiService = new BackendApiService(this.settingsService);
+        this.emailClassificationService = new EmailClassificationService(
+            this.emailRepository,
+            this.emailParserService
+        );
+        this.unsubscribeService = new UnsubscribeService(this.emailRepository);
+        
+        // Initialize controllers
+        this.uiController = new UIController(
+            this.domRefs,
+            this.emailRepository,
+            this.emailClassificationService,
+            this.backendApiService,
+            this.unsubscribeService
+        );
+        
+        this.eventController = new EventController(
+            this.domRefs,
+            this,
+            this.settingsService,
+            this.uiController
+        );
+    }
 
-// DOM Element References
-const backBtn = document.getElementById('backBtn');
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsPanel = document.getElementById('settingsPanel');
-const apiKeyInput = document.getElementById('apiKeyInput');
-const backendUrlInput = document.getElementById('backendUrlInput');
-const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
-const saveBackendUrlBtn = document.getElementById('saveBackendUrlBtn');
-const redirectUriDisplay = document.getElementById('redirectUriDisplay');
-const copyRedirectUriBtn = document.getElementById('copyRedirectUriBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const authSection = document.getElementById('authSection');
-const connectGmailBtn = document.getElementById('connectGmailBtn');
-const loadingSpinner = document.getElementById('loadingSpinner');
-const errorMessage = document.getElementById('errorMessage');
-const successMessage = document.getElementById('successMessage');
-const emailListSection = document.getElementById('emailListSection');
-const emailList = document.getElementById('emailList');
-const accountEmailSpan = document.getElementById('accountEmail');
-const refreshBtn = document.getElementById('refreshBtn');
-const emptyState = document.getElementById('emptyState');
-const emailModal = document.getElementById('emailModal');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const modalSubject = document.getElementById('modalSubject');
-const modalSender = document.getElementById('modalSender');
-const modalDate = document.getElementById('modalDate');
-const modalBodyContent = document.getElementById('modalBodyContent');
-const modalAiResults = document.getElementById('modalAiResults');
-
-// State
-let currentEmails = [];
-let processingEmails = new Set(); // Track which emails are being processed
-let emailCache = new Map(); // Cache AI results per email ID
-
-// ============================================================================
-// Initialization
-// ============================================================================
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // Load stored settings
-    await loadSettings();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Check authentication state and initialize UI
-    await checkAuthAndInit();
-});
-
-// ============================================================================
-// Event Listeners Setup
-// ============================================================================
-
-function setupEventListeners() {
-    // Navigation
-    backBtn.addEventListener('click', () => {
-        window.location.href = '../../popup/App.html';
-    });
-
-    // Settings
-    settingsBtn.addEventListener('click', () => {
-        const isVisible = settingsPanel.style.display !== 'none';
-        settingsPanel.style.display = isVisible ? 'none' : 'block';
-    });
-
-    saveApiKeyBtn.addEventListener('click', async () => {
-        await saveApiKey();
-    });
-
-    saveBackendUrlBtn.addEventListener('click', async () => {
-        await saveBackendUrl();
-    });
-
-    copyRedirectUriBtn.addEventListener('click', async () => {
-        if (redirectUriDisplay.value) {
-            try {
-                await navigator.clipboard.writeText(redirectUriDisplay.value);
-                showSuccess('Redirect URI copied to clipboard!');
-                setTimeout(hideSuccess, 2000);
-            } catch (error) {
-                // Fallback: select text for manual copy
-                redirectUriDisplay.select();
-                document.execCommand('copy');
-                showSuccess('Redirect URI selected - press Ctrl+C (or Cmd+C) to copy');
-                setTimeout(hideSuccess, 2000);
-            }
+    /**
+     * Initialize the application
+     */
+    async init() {
+        // Load stored settings
+        await this.settingsService.loadSettings();
+        
+        // Load unsubscribed senders
+        await this.emailRepository.loadUnsubscribedSenders();
+        
+        // Setup event listeners
+        this.eventController.setupEventListeners();
+        
+        // Initialize inbox tabs UI
+        if (this.domRefs.inboxTabs) {
+            this.uiController.updateInboxTabsUI();
         }
-    });
+        
+        // Check authentication state and initialize UI
+        await this.checkAuthAndInit();
+    }
 
-    logoutBtn.addEventListener('click', async () => {
-        await handleLogout();
-    });
-
-    // Authentication
-    connectGmailBtn.addEventListener('click', async () => {
-        await handleGmailConnect();
-    });
-
-    // Email list
-    refreshBtn.addEventListener('click', async () => {
-        await fetchAndDisplayEmails();
-    });
-
-    // Modal
-    closeModalBtn.addEventListener('click', () => {
-        emailModal.style.display = 'none';
-    });
-
-    emailModal.addEventListener('click', (e) => {
-        if (e.target === emailModal) {
-            emailModal.style.display = 'none';
-        }
-    });
-}
-
-// ============================================================================
-// Settings Management
-// ============================================================================
-
-async function loadSettings() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([STORAGE_KEY_API_KEY, STORAGE_KEY_BACKEND_URL], (result) => {
-            if (result[STORAGE_KEY_API_KEY]) {
-                apiKeyInput.value = result[STORAGE_KEY_API_KEY];
-            }
-            if (result[STORAGE_KEY_BACKEND_URL]) {
-                backendUrlInput.value = result[STORAGE_KEY_BACKEND_URL];
+    /**
+     * Check authentication and initialize UI
+     */
+    async checkAuthAndInit() {
+        try {
+            const isAuth = await isAuthenticated();
+            if (isAuth) {
+                // Load account email
+                const email = await getStoredAccountEmail();
+                if (email) {
+                    this.domRefs.accountEmailSpan.textContent = email;
+                }
+                
+                // Hide auth section, show email list section
+                this.domRefs.authSection.style.display = 'none';
+                this.domRefs.emailListSection.style.display = 'block';
+                
+                // Fetch emails
+                await this.fetchAndDisplayEmails();
             } else {
-                backendUrlInput.value = DEFAULT_BACKEND_URL;
+                // Show auth section
+                this.domRefs.authSection.style.display = 'block';
+                this.domRefs.emailListSection.style.display = 'none';
             }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            this.uiController.showError('Failed to check authentication status');
+        }
+    }
+
+    /**
+     * Handle Gmail connection
+     */
+    async handleGmailConnect() {
+        try {
+            this.uiController.showLoading('Connecting to Gmail...');
+            this.uiController.hideError();
+            this.uiController.hideSuccess();
+
+            // Clear any existing token to force account selection
+            const existingToken = await new Promise((resolve) => {
+                chrome.storage.local.get(['gmail_access_token'], (result) => {
+                    resolve(result.gmail_access_token || null);
+                });
+            });
             
-            // Populate redirect URI for OAuth configuration
-            try {
-                const redirectUri = chrome.identity.getRedirectURL();
-                const normalizedRedirectUri = redirectUri.endsWith('/') ? redirectUri : redirectUri + '/';
-                redirectUriDisplay.value = normalizedRedirectUri;
-            } catch (error) {
-                console.error('Failed to get redirect URI:', error);
-                redirectUriDisplay.value = 'Unable to get redirect URI';
+            if (existingToken) {
+                chrome.identity.removeCachedAuthToken({ token: existingToken }, () => {});
+                await chrome.storage.local.remove(['gmail_access_token', 'gmail_account_email']);
             }
+
+            // Get auth token (this will trigger OAuth flow with account selection)
+            const token = await getAuthToken();
             
-            resolve();
-        });
-    });
-}
+            if (!token) {
+                throw new Error('Failed to get authentication token');
+            }
 
-async function saveApiKey() {
-    const apiKey = apiKeyInput.value.trim();
-    
-    if (!apiKey) {
-        showError('API key cannot be empty');
-        return;
-    }
-
-    if (!apiKey.startsWith('sk-')) {
-        showError('Invalid OpenAI API key format (should start with sk-)');
-        return;
-    }
-
-    try {
-        await chrome.storage.local.set({ [STORAGE_KEY_API_KEY]: apiKey });
-        showSuccess('API key saved successfully');
-        
-        // Hide settings panel after a short delay
-        setTimeout(() => {
-            settingsPanel.style.display = 'none';
-        }, 1500);
-    } catch (error) {
-        showError('Failed to save API key: ' + error.message);
-    }
-}
-
-async function saveBackendUrl() {
-    const backendUrl = backendUrlInput.value.trim();
-    
-    if (!backendUrl) {
-        showError('Backend URL cannot be empty');
-        return;
-    }
-
-    // Basic URL validation
-    try {
-        new URL(backendUrl);
-    } catch (error) {
-        showError('Invalid backend URL format');
-        return;
-    }
-
-    try {
-        await chrome.storage.local.set({ [STORAGE_KEY_BACKEND_URL]: backendUrl });
-        showSuccess('Backend URL saved successfully');
-        
-        setTimeout(() => {
-            settingsPanel.style.display = 'none';
-        }, 1500);
-    } catch (error) {
-        showError('Failed to save backend URL: ' + error.message);
-    }
-}
-
-async function getStoredApiKey() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([STORAGE_KEY_API_KEY], (result) => {
-            resolve(result[STORAGE_KEY_API_KEY] || null);
-        });
-    });
-}
-
-async function getBackendUrl() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([STORAGE_KEY_BACKEND_URL], (result) => {
-            resolve(result[STORAGE_KEY_BACKEND_URL] || DEFAULT_BACKEND_URL);
-        });
-    });
-}
-
-// ============================================================================
-// Authentication
-// ============================================================================
-
-async function checkAuthAndInit() {
-    try {
-        const isAuth = await isAuthenticated();
-        if (isAuth) {
-            // Load account email
+            // Get account email
             const email = await getStoredAccountEmail();
             if (email) {
-                accountEmailSpan.textContent = email;
+                this.domRefs.accountEmailSpan.textContent = email;
             }
-            
-            // Hide auth section, show email list section
-            authSection.style.display = 'none';
-            emailListSection.style.display = 'block';
-            
+
+            // Hide auth section, show email list
+            this.domRefs.authSection.style.display = 'none';
+            this.domRefs.emailListSection.style.display = 'block';
+            this.uiController.hideLoading();
+
             // Fetch emails
-            await fetchAndDisplayEmails();
-        } else {
-            // Show auth section
-            authSection.style.display = 'block';
-            emailListSection.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Auth check error:', error);
-        showError('Failed to check authentication status');
-    }
-}
-
-async function handleGmailConnect() {
-    try {
-        showLoading('Connecting to Gmail...');
-        hideError();
-        hideSuccess();
-
-        // Get auth token (this will trigger OAuth flow if needed)
-        const token = await getAuthToken();
-        
-        if (!token) {
-            throw new Error('Failed to get authentication token');
-        }
-
-        // Get account email
-        const email = await getStoredAccountEmail();
-        if (email) {
-            accountEmailSpan.textContent = email;
-        }
-
-        // Hide auth section, show email list
-        authSection.style.display = 'none';
-        emailListSection.style.display = 'block';
-        hideLoading();
-
-        // Fetch emails
-        await fetchAndDisplayEmails();
-        
-        showSuccess('Successfully connected to Gmail');
-        setTimeout(hideSuccess, 3000);
-    } catch (error) {
-        hideLoading();
-        console.error('Gmail connection error:', error);
-        
-        if (error.message.includes('OAuth') || error.message.includes('auth')) {
-            showError('Failed to authenticate with Gmail. Please try again.');
-        } else {
-            showError('Failed to connect to Gmail: ' + error.message);
-        }
-    }
-}
-
-async function handleLogout() {
-    try {
-        showLoading('Logging out...');
-        await revokeToken();
-        
-        // Clear UI
-        authSection.style.display = 'block';
-        emailListSection.style.display = 'none';
-        emailList.innerHTML = '';
-        currentEmails = [];
-        emailCache.clear();
-        
-        hideLoading();
-        showSuccess('Logged out successfully');
-        setTimeout(hideSuccess, 2000);
-    } catch (error) {
-        hideLoading();
-        console.error('Logout error:', error);
-        showError('Failed to logout: ' + error.message);
-    }
-}
-
-// ============================================================================
-// Gmail API Client Functions
-// ============================================================================
-
-/**
- * Fetch email list from Gmail API
- * @returns {Promise<Array>} Array of email message objects
- */
-async function fetchEmailList() {
-    const token = await getAuthToken();
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    // Fetch message list
-    const listResponse = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${MAX_EMAILS_TO_FETCH}&q=in:inbox`,
-        {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        }
-    );
-
-    if (!listResponse.ok) {
-        if (listResponse.status === 401) {
-            // Token expired, refresh and retry
-            await refreshToken();
-            return fetchEmailList();
-        }
-        throw new Error(`Gmail API error: ${listResponse.status} ${listResponse.statusText}`);
-    }
-
-    const listData = await listResponse.json();
-    
-    if (!listData.messages || listData.messages.length === 0) {
-        return [];
-    }
-
-    // Fetch full message details for each message
-    const emailPromises = listData.messages.slice(0, MAX_EMAILS_TO_FETCH).map(async (msg) => {
-        try {
-            return await fetchEmailDetails(msg.id, token);
+            await this.fetchAndDisplayEmails();
+            
+            this.uiController.showSuccess('Successfully connected to Gmail');
+            setTimeout(() => this.uiController.hideSuccess(), 3000);
         } catch (error) {
-            console.error(`Failed to fetch email ${msg.id}:`, error);
-            return null;
-        }
-    });
-
-    const emails = await Promise.all(emailPromises);
-    return emails.filter(email => email !== null);
-}
-
-/**
- * Fetch full email details from Gmail API
- * @param {string} messageId - Gmail message ID
- * @param {string} token - Access token
- * @returns {Promise<Object>} Parsed email object
- */
-async function fetchEmailDetails(messageId, token) {
-    const response = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`,
-        {
-            headers: {
-                'Authorization': `Bearer ${token}`
+            this.uiController.hideLoading();
+            console.error('Gmail connection error:', error);
+            
+            if (error.message.includes('OAuth') || error.message.includes('auth')) {
+                this.uiController.showError('Failed to authenticate with Gmail. Please try again.');
+            } else {
+                this.uiController.showError('Failed to connect to Gmail: ' + error.message);
             }
         }
-    );
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch email: ${response.status}`);
     }
 
-    const data = await response.json();
-    return parseEmailData(data);
-}
+    /**
+     * Handle logout
+     */
+    async handleLogout() {
+        try {
+            this.uiController.showLoading('Logging out...');
+            await revokeToken();
+            
+            // Clear UI
+            this.domRefs.authSection.style.display = 'block';
+            this.domRefs.emailListSection.style.display = 'none';
+            this.domRefs.emailList.innerHTML = '';
+            this.emailRepository.setEmails([]);
+            this.emailRepository.clearCache();
+            this.emailRepository.setNextPageToken(null);
+            
+            this.uiController.hideLoading();
+            this.uiController.showSuccess('Logged out successfully');
+            setTimeout(() => this.uiController.hideSuccess(), 2000);
+        } catch (error) {
+            this.uiController.hideLoading();
+            console.error('Logout error:', error);
+            this.uiController.showError('Failed to logout: ' + error.message);
+        }
+    }
 
-/**
- * Parse Gmail API response into a structured email object
- * @param {Object} data - Raw Gmail API response
- * @returns {Object} Parsed email object
- */
-function parseEmailData(data) {
-    const headers = data.payload.headers || [];
-    
-    const getHeader = (name) => {
-        const header = headers.find(h => h.name.toLowerCase() === name.toLowerCase());
-        return header ? header.value : '';
-    };
+    /**
+     * Fetch and display emails
+     */
+    async fetchAndDisplayEmails() {
+        try {
+            this.uiController.showLoading('Fetching emails...');
+            this.uiController.hideError();
+            this.uiController.hideSuccess();
+            this.domRefs.emailList.innerHTML = '';
+            
+            // Reset pagination
+            this.emailRepository.setNextPageToken(null);
+            this.emailRepository.setEmails([]);
+            
+            const result = await this.gmailApiService.fetchEmailList();
+            this.emailRepository.setEmails(result.emails);
+            this.emailRepository.setNextPageToken(result.nextPageToken);
+            
+            this.uiController.hideLoading();
+            
+            // Auto-categorize emails if enabled
+            if (AUTO_CATEGORIZE_ON_LOAD && this.emailRepository.getEmails().length > 0) {
+                this.uiController.showLoading('Categorizing emails...');
+                await this.autoCategorizeEmails(this.emailRepository.getEmails());
+                this.uiController.hideLoading();
+            }
+            
+            // Reset to primary inbox when fetching new emails
+            this.emailRepository.setSelectedInbox(DEFAULT_INBOX);
+            this.uiController.updateInboxTabsUI();
+            
+            // Render filtered emails
+            this.uiController.renderEmailList();
+            
+            // Update load more button visibility
+            this.uiController.updateLoadMoreButton();
 
-    const subject = getHeader('Subject') || '(No Subject)';
-    const from = getHeader('From') || 'Unknown Sender';
-    const date = getHeader('Date') || new Date().toISOString();
-    
-    // Extract email body (prefer plain text, fallback to HTML)
-    let body = '';
-    const parts = data.payload.parts || [];
-    
-    if (parts.length > 0) {
-        // Find plain text part
-        const textPart = parts.find(part => part.mimeType === 'text/plain');
-        if (textPart && textPart.body && textPart.body.data) {
-            body = decodeBase64(textPart.body.data);
-        } else {
-            // Fallback to HTML and strip tags
-            const htmlPart = parts.find(part => part.mimeType === 'text/html');
-            if (htmlPart && htmlPart.body && htmlPart.body.data) {
-                const html = decodeBase64(htmlPart.body.data);
-                body = stripHtml(html);
+        } catch (error) {
+            this.uiController.hideLoading();
+            console.error('Fetch emails error:', error);
+            
+            if (error.message.includes('Not authenticated')) {
+                this.uiController.showError('Not authenticated. Please connect your Gmail account.');
+                this.domRefs.authSection.style.display = 'block';
+                this.domRefs.emailListSection.style.display = 'none';
+            } else if (error.message.includes('401')) {
+                this.uiController.showError('Authentication expired. Please reconnect your Gmail account.');
+                this.domRefs.authSection.style.display = 'block';
+                this.domRefs.emailListSection.style.display = 'none';
+            } else {
+                this.uiController.showError('Failed to fetch emails: ' + error.message);
             }
         }
-    } else if (data.payload.body && data.payload.body.data) {
-        // Single part email
-        body = decodeBase64(data.payload.body.data);
     }
 
-    // Combine subject and body for AI processing
-    const fullContent = `Subject: ${subject}\n\nFrom: ${from}\n\n${body}`;
-
-    return {
-        id: data.id,
-        threadId: data.threadId,
-        subject: subject,
-        from: from,
-        date: date,
-        body: body,
-        fullContent: fullContent,
-        snippet: data.snippet || body.substring(0, 100) + '...'
-    };
-}
-
-/**
- * Decode base64-encoded string (Gmail API uses URL-safe base64)
- * @param {string} base64String - Base64 encoded string
- * @returns {string} Decoded string
- */
-function decodeBase64(base64String) {
-    try {
-        // Gmail API uses URL-safe base64, convert to standard base64
-        const standardBase64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
-        const decoded = atob(standardBase64);
-        return decoded;
-    } catch (error) {
-        console.error('Base64 decode error:', error);
-        return '';
-    }
-}
-
-/**
- * Strip HTML tags from string (simple implementation)
- * @param {string} html - HTML string
- * @returns {string} Plain text
- */
-function stripHtml(html) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-}
-
-// ============================================================================
-// Backend API Calls
-// ============================================================================
-
-/**
- * Process email through backend AI API
- * @param {Object} email - Email object
- * @returns {Promise<Object>} AI analysis results
- */
-async function processEmailWithAI(email) {
-    const apiKey = await getStoredApiKey();
-    if (!apiKey) {
-        throw new Error('OpenAI API key not set. Please configure it in settings.');
-    }
-
-    const backendUrl = await getBackendUrl();
-    const url = `${backendUrl}/api/email/summarize`;
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                emailContent: email.fullContent,
-                apiKey: apiKey
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(errorData.error || `Backend error: ${response.status}`);
-        }
-
-        const result = await response.json();
-        
-        // Validate response structure
-        if (!result.summary || !result.category) {
-            throw new Error('Invalid response format from backend');
-        }
-
-        return result;
-    } catch (error) {
-        if (error.message.includes('fetch')) {
-            throw new Error('Failed to connect to backend server. Make sure it is running.');
-        }
-        throw error;
-    }
-}
-
-// ============================================================================
-// UI Management
-// ============================================================================
-
-async function fetchAndDisplayEmails() {
-    try {
-        showLoading('Fetching emails...');
-        hideError();
-        hideSuccess();
-        emailList.innerHTML = '';
-        
-        const emails = await fetchEmailList();
-        currentEmails = emails;
-        
-        hideLoading();
-
-        if (emails.length === 0) {
-            emptyState.style.display = 'block';
-            emailListSection.style.display = 'none';
+    /**
+     * Load more emails (pagination)
+     */
+    async loadMoreEmails() {
+        if (this.emailRepository.isLoadingMore() || !this.emailRepository.getNextPageToken()) {
             return;
         }
-
-        emptyState.style.display = 'none';
-        emailListSection.style.display = 'block';
-
-        // Display emails
-        emails.forEach(email => {
-            const emailCard = createEmailCard(email);
-            emailList.appendChild(emailCard);
-        });
-
-    } catch (error) {
-        hideLoading();
-        console.error('Fetch emails error:', error);
         
-        if (error.message.includes('Not authenticated')) {
-            showError('Not authenticated. Please connect your Gmail account.');
-            authSection.style.display = 'block';
-            emailListSection.style.display = 'none';
-        } else if (error.message.includes('401')) {
-            showError('Authentication expired. Please reconnect your Gmail account.');
-            authSection.style.display = 'block';
-            emailListSection.style.display = 'none';
-        } else {
-            showError('Failed to fetch emails: ' + error.message);
-        }
-    }
-}
-
-function createEmailCard(email) {
-    const card = document.createElement('div');
-    card.className = 'emailCard';
-    card.dataset.emailId = email.id;
-
-    // Check if we have cached AI results
-    const cachedResults = emailCache.get(email.id);
-    const category = cachedResults ? cachedResults.category : null;
-    const hasUnsubscribe = cachedResults ? cachedResults.hasUnsubscribe : false;
-
-    // Format date (relative time)
-    const dateStr = formatDate(email.date);
-
-    card.innerHTML = `
-        <div class="emailCardHeader">
-            <div class="emailSubject">${escapeHtml(email.subject)}</div>
-            <div class="emailDate">${dateStr}</div>
-        </div>
-        <div class="emailSender">${escapeHtml(email.from)}</div>
-        <div class="emailPreview">${escapeHtml(email.snippet)}</div>
-        <div class="emailActions">
-            ${category ? `<span class="categoryBadge ${category.toLowerCase()}">${category}</span>` : ''}
-            ${hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe Available</span>' : ''}
-            <button class="button small processEmailBtn" style="margin-top: 8px; width: 100%;">Process with AI</button>
-            <button class="button small viewEmailBtn" style="margin-top: 4px; width: 100%;">View Details</button>
-        </div>
-    `;
-
-    // Add event listeners
-    const processBtn = card.querySelector('.processEmailBtn');
-    const viewBtn = card.querySelector('.viewEmailBtn');
-
-    processBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await handleProcessEmail(email, card);
-    });
-
-    viewBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showEmailModal(email);
-    });
-
-    return card;
-}
-
-async function handleProcessEmail(email, card) {
-    // Prevent duplicate processing
-    if (processingEmails.has(email.id)) {
-        return;
-    }
-
-    try {
-        processingEmails.add(email.id);
-        const processBtn = card.querySelector('.processEmailBtn');
-        const originalText = processBtn.textContent;
-        processBtn.textContent = 'Processing...';
-        processBtn.disabled = true;
-
-        // Check cache first
-        let results = emailCache.get(email.id);
-        
-        if (!results) {
-            // Process with AI
-            results = await processEmailWithAI(email);
-            emailCache.set(email.id, results);
-        }
-
-        // Update card with results
-        updateEmailCardWithResults(card, results);
-
-        processingEmails.delete(email.id);
-        processBtn.textContent = originalText;
-        processBtn.disabled = false;
-        processBtn.style.display = 'none'; // Hide button after processing
-
-    } catch (error) {
-        processingEmails.delete(email.id);
-        const processBtn = card.querySelector('.processEmailBtn');
-        processBtn.textContent = 'Process with AI';
-        processBtn.disabled = false;
-        
-        console.error('Process email error:', error);
-        showError('Failed to process email: ' + error.message);
-    }
-}
-
-function updateEmailCardWithResults(card, results) {
-    const actionsDiv = card.querySelector('.emailActions');
-    
-    // Remove existing badges
-    const existingBadges = actionsDiv.querySelectorAll('.categoryBadge, .unsubscribeBadge, .aiSummary');
-    existingBadges.forEach(badge => badge.remove());
-
-    // Add category badge
-    if (results.category) {
-        const categoryBadge = document.createElement('span');
-        categoryBadge.className = `categoryBadge ${results.category.toLowerCase()}`;
-        categoryBadge.textContent = results.category;
-        actionsDiv.insertBefore(categoryBadge, actionsDiv.firstChild);
-    }
-
-    // Add unsubscribe badge/link
-    if (results.hasUnsubscribe) {
-        const unsubscribeBadge = document.createElement('span');
-        unsubscribeBadge.className = 'unsubscribeBadge';
-        unsubscribeBadge.textContent = 'Unsubscribe Available';
-        actionsDiv.appendChild(unsubscribeBadge);
-
-        if (results.unsubscribeLink) {
-            const unsubscribeLink = document.createElement('a');
-            unsubscribeLink.href = results.unsubscribeLink;
-            unsubscribeLink.target = '_blank';
-            unsubscribeLink.className = 'unsubscribeLink';
-            unsubscribeLink.textContent = 'Click to Unsubscribe';
-            actionsDiv.appendChild(unsubscribeLink);
-        }
-    }
-
-    // Add summary (collapsible)
-    const summaryDiv = document.createElement('div');
-    summaryDiv.className = 'aiSummary';
-    summaryDiv.innerHTML = `<strong>Summary:</strong> ${escapeHtml(results.summary)}`;
-    actionsDiv.appendChild(summaryDiv);
-}
-
-function showEmailModal(email) {
-    modalSubject.textContent = email.subject;
-    modalSender.textContent = `From: ${email.from}`;
-    modalDate.textContent = `Date: ${formatDate(email.date)}`;
-    modalBodyContent.textContent = email.body;
-
-    // Check for cached AI results
-    const cachedResults = emailCache.get(email.id);
-    
-    if (cachedResults) {
-        modalAiResults.innerHTML = `
-            <h4>AI Analysis</h4>
-            <div class="aiResults">
-                <div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">
-                    ${cachedResults.category}
-                </div>
-                <div class="aiSummary">
-                    <strong>Summary:</strong><br>
-                    ${escapeHtml(cachedResults.summary)}
-                </div>
-                ${cachedResults.hasUnsubscribe ? `
-                    <div style="margin-top: 10px;">
-                        <span class="unsubscribeBadge">Unsubscribe Available</span>
-                        ${cachedResults.unsubscribeLink ? `
-                            <a href="${cachedResults.unsubscribeLink}" target="_blank" class="unsubscribeLink" style="display: block; margin-top: 8px;">
-                                Click to Unsubscribe
-                            </a>
-                        ` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    } else {
-        // Show process button in modal
-        modalAiResults.innerHTML = `
-            <h4>AI Analysis</h4>
-            <button class="button primary" id="processInModalBtn">Process with AI</button>
-        `;
-        
-        document.getElementById('processInModalBtn').addEventListener('click', async () => {
-            try {
-                const results = await processEmailWithAI(email);
-                emailCache.set(email.id, results);
-                showEmailModal(email); // Refresh modal with results
-            } catch (error) {
-                showError('Failed to process email: ' + error.message);
+        try {
+            this.emailRepository.setLoadingMore(true);
+            if (this.domRefs.loadMoreBtn) {
+                this.domRefs.loadMoreBtn.disabled = true;
+                this.domRefs.loadMoreBtn.textContent = 'Loading...';
             }
-        });
+            
+            const result = await this.gmailApiService.fetchEmailList(this.emailRepository.getNextPageToken());
+            const newEmails = result.emails;
+            this.emailRepository.setNextPageToken(result.nextPageToken);
+            
+            // Add new emails to current list
+            this.emailRepository.addEmails(newEmails);
+            
+            // Auto-categorize new emails if enabled
+            if (AUTO_CATEGORIZE_ON_LOAD) {
+                await this.autoCategorizeEmails(newEmails);
+            }
+            
+            // Re-render to show new emails
+            this.uiController.renderEmailList();
+            
+            // Update load more button visibility
+            this.uiController.updateLoadMoreButton();
+            
+        } catch (error) {
+            console.error('Load more emails error:', error);
+            this.uiController.showError('Failed to load more emails: ' + error.message);
+        } finally {
+            this.emailRepository.setLoadingMore(false);
+            if (this.domRefs.loadMoreBtn) {
+                this.domRefs.loadMoreBtn.disabled = false;
+                this.domRefs.loadMoreBtn.textContent = 'Load More';
+            }
+        }
     }
 
-    emailModal.style.display = 'flex';
-}
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-function showLoading(message = 'Loading...') {
-    loadingSpinner.querySelector('p').textContent = message;
-    loadingSpinner.style.display = 'block';
-}
-
-function hideLoading() {
-    loadingSpinner.style.display = 'none';
-}
-
-function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.style.display = 'block';
-    setTimeout(() => {
-        errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
-}
-
-function hideError() {
-    errorMessage.style.display = 'none';
-}
-
-function showSuccess(message) {
-    successMessage.textContent = message;
-    successMessage.style.display = 'block';
-    setTimeout(() => {
-        successMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
-}
-
-function hideSuccess() {
-    successMessage.style.display = 'none';
-}
-
-function formatDate(dateString) {
-    try {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
+    /**
+     * Auto-categorize emails in the background
+     * @param {Array} emails - Array of emails to categorize
+     */
+    async autoCategorizeEmails(emails) {
+        // Process emails in batches to avoid overwhelming the backend
+        const batchSize = 5;
+        for (let i = 0; i < emails.length; i += batchSize) {
+            const batch = emails.slice(i, i + batchSize);
+            await Promise.all(batch.map(async (email) => {
+                // Skip if already processed
+                const cachedResults = this.emailRepository.getCachedResult(email.id);
+                if (cachedResults) {
+                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cachedResults.category);
+                    return;
+                }
+                
+                // Skip if already categorized by Gmail labels
+                if (email.inboxCategory !== DEFAULT_INBOX) {
+                    return;
+                }
+                
+                try {
+                    const results = await this.backendApiService.processEmailWithAI(email);
+                    this.emailRepository.setCache(email.id, results);
+                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category);
+                } catch (error) {
+                    console.error(`Failed to auto-categorize email ${email.id}:`, error);
+                    // Keep default category on error
+                }
+            }));
+            
+            // Small delay between batches to avoid rate limiting
+            if (i + batchSize < emails.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
         
-        return date.toLocaleDateString();
-    } catch (error) {
-        return dateString;
+        // Re-render to reflect any category changes
+        this.uiController.renderEmailList();
+    }
+
+    /**
+     * Switch to a different inbox view
+     * @param {string} newInbox - New inbox category to switch to
+     */
+    switchInbox(newInbox) {
+        if (newInbox === this.emailRepository.getSelectedInbox()) return;
+        
+        this.emailRepository.setSelectedInbox(newInbox);
+        this.uiController.updateInboxTabsUI();
+        this.uiController.updateManagePromotionsButton();
+        this.uiController.renderEmailList();
+    }
+
+    /**
+     * Process unsubscribe for selected senders
+     */
+    async processUnsubscribe() {
+        if (!this.domRefs.senderList || !this.domRefs.confirmUnsubscribeBtn) return;
+        
+        const checkboxes = this.domRefs.senderList.querySelectorAll('.senderCheckbox:checked');
+        if (checkboxes.length === 0) {
+            this.uiController.showError('Please select at least one sender to unsubscribe from');
+            return;
+        }
+        
+        const selectedDomains = Array.from(checkboxes).map(cb => cb.dataset.domain);
+        const senderGroups = this.emailClassificationService.groupEmailsBySender();
+        const selectedSenders = selectedDomains.map(domain => senderGroups.get(domain)).filter(Boolean);
+        
+        // Disable button and show loading
+        this.domRefs.confirmUnsubscribeBtn.disabled = true;
+        this.domRefs.confirmUnsubscribeBtn.textContent = 'Processing...';
+        
+        const results = {
+            success: [],
+            failed: [],
+            needsFilter: []
+        };
+        
+        try {
+            for (const sender of selectedSenders) {
+                try {
+                    if (sender.unsubscribeMethod === 'url' && sender.unsubscribeUrl) {
+                        const requiresPost = sender.requiresPost || false;
+                        const result = await this.unsubscribeService.unsubscribeViaUrl(sender.unsubscribeUrl, requiresPost);
+                        if (result.success) {
+                            // Mark as unsubscribed
+                            await this.emailRepository.markUnsubscribed(sender.domain);
+                            results.success.push({ ...sender, ...result });
+                        } else {
+                            results.failed.push({ sender, ...result });
+                        }
+                    } else if (sender.unsubscribeMethod === 'mailto' && sender.unsubscribeUrl) {
+                        const result = await this.unsubscribeService.unsubscribeViaMailto(sender.unsubscribeUrl, sender.domain);
+                        if (result.success) {
+                            // Mark as unsubscribed
+                            await this.emailRepository.markUnsubscribed(sender.domain);
+                            results.success.push({ ...sender, ...result });
+                        } else {
+                            results.failed.push({ sender, ...result });
+                        }
+                    } else {
+                        // No unsubscribe support - offer filter creation
+                        results.needsFilter.push(sender);
+                    }
+                    
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (error) {
+                    results.failed.push({ sender, error: error.message, verified: false });
+                }
+            }
+            
+            // Show results
+            this.uiController.showUnsubscribeResults(results);
+            
+        } catch (error) {
+            this.uiController.showError('Failed to process unsubscribe: ' + error.message);
+        } finally {
+            this.domRefs.confirmUnsubscribeBtn.disabled = false;
+            this.domRefs.confirmUnsubscribeBtn.textContent = 'Unsubscribe Selected';
+        }
     }
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', async () => {
+    const emailController = new EmailController();
+    await emailController.init();
+});

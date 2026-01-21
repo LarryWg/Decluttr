@@ -16,13 +16,8 @@
         </div>
 
         <!-- Settings Panel (hidden by default) -->
-        <div class="settingsPanel" id="settingsPanel">
+        <div class="settingsPanel" id="settingsPanel" style="display: none;">
             <h3>Settings</h3>
-            <div class="settingItem">
-                <label for="apiKeyInput">OpenAI API Key:</label>
-                <input type="password" id="apiKeyInput" placeholder="sk-..." />
-                <button class="saveButton" id="saveApiKeyBtn">Save</button>
-            </div>
             <div class="settingItem">
                 <label for="backendUrlInput">Backend URL:</label>
                 <input type="text" id="backendUrlInput" value="http://localhost:3000" placeholder="http://localhost:3000" />
@@ -65,14 +60,38 @@
                 <span id="accountEmail" class="accountEmail"></span>
                 <button class="button small" id="refreshBtn">Refresh</button>
             </div>
+            <div class="inboxTabs" id="inboxTabs">
+                <button class="inboxTab active" data-inbox="primary">Primary</button>
+                <button class="inboxTab" data-inbox="promotions">Promotions</button>
+            </div>
+            <button class="button small" id="managePromotionsBtn" style="display: none; width: 100%; margin-bottom: 12px;">Manage Promotions</button>
             <div class="emailList" id="emailList">
                 <!-- Email cards will be inserted here -->
             </div>
+            <button class="button small" id="loadMoreBtn" style="display: none; width: 100%; margin-top: 12px;">Load More</button>
         </div>
 
         <!-- Empty State -->
         <div class="emptyState" id="emptyState" style="display: none;">
             <p>No emails found</p>
+        </div>
+    </div>
+
+    <!-- Unsubscribe Modal -->
+    <div class="unsubscribeModal" id="unsubscribeModal" style="display: none;">
+        <div class="modalContent">
+            <button class="closeButton" id="closeUnsubscribeModalBtn">×</button>
+            <h3>Unsubscribe from Senders</h3>
+            <p style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">
+                Select senders to unsubscribe from. Senders without unsubscribe support can be filtered instead.
+            </p>
+            <div class="senderList" id="senderList">
+                <!-- Sender list will be inserted here -->
+            </div>
+            <div class="modalActions" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="button" id="cancelUnsubscribeBtn" style="flex: 1;">Cancel</button>
+                <button class="button primary" id="confirmUnsubscribeBtn" style="flex: 1;">Unsubscribe Selected</button>
+            </div>
         </div>
     </div>
 
@@ -98,6 +117,6 @@
 
     <!-- Scripts -->
     <script src="gmail-auth.js"></script>
-    <script src="email.js"></script>
+    <script type="module" src="email.js"></script>
 </body>
 </html>
