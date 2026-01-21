@@ -2,17 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Focus Mode</title>
     <link rel="stylesheet" href="focus.css">
 </head>
 <body>
-    <div class="container" style="position: relative;">
-        <video id="camera-feed" autoplay playsinline></video>
-        <canvas id="overlay"></canvas>
-        <button class="backButton" id="backBtn">← Back</button>
-    </div>
+    <div class="container">
+        <div class="header">
+            <button class="backButton" id="backBtn">← Back</button>
+            <h2>Focus Mode</h2>
+        </div>
 
-    <script src="bridge.js" type="module"></script>
+        <button id="toggleCamBtn" class="subButton">Show Camera</button>
+
+        <div class="video-wrapper">
+            <video id="camera-feed" class="video-hidden" autoplay playsinline></video>
+            <canvas id="overlay"></canvas>
+        </div>
+    </div> 
+    
+    <script src="video.js" type="module"></script>
     <script src="focus.js" type="module"></script>
 </body>
 </html>

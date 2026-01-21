@@ -1,105 +1,145 @@
-//Element References
+/**
+ * focus.js
+ * Real-time eye tracking with instant color feedback.
+ */
+
+// --- Element References ---
 const video = document.getElementById('camera-feed');
 const canvas = document.getElementById('overlay');
 const backBtn = document.getElementById("backBtn");
+const toggleCamBtn = document.getElementById('toggleCamBtn');
 
-let faceDetector;
-let lastVideoTime = -1;
+// --- Global Variables ---
+let faceLandmarker;        
+let lastVideoTime = -1;    
+let lookAwayStartTime = null; 
+const LOOK_AWAY_THRESHOLD = 2000; // 2 seconds
 
-//back button
+// --- Event Listeners ---
+
 backBtn.addEventListener("click", () => {
     window.location.href = "../../popup/App.html";
 });
 
-//MediaPipe Face Detector
+toggleCamBtn.addEventListener('click', () => {
+    if (video.classList.contains('video-hidden')) {
+        // SHOWING CAMERA
+        video.classList.remove('video-hidden');
+        video.classList.add('video-visible');
+        toggleCamBtn.textContent = 'Hide Camera';
+        toggleCamBtn.classList.add('active-btn');
+    } else {
+        // HIDING CAMERA
+        video.classList.remove('video-visible');
+        video.classList.add('video-hidden');
+        toggleCamBtn.textContent = 'Show Camera';
+        toggleCamBtn.classList.remove('active-btn');
+    }
+});
+
+// --- MediaPipe Initialization ---
+
 async function initMediaPipe() {
     try {
-        // Wait for bridge.js to finish
-        if (!window.FilesetResolver || !window.FaceDetector) {
+        if (!window.FilesetResolver || !window.FaceLandmarker) {
             setTimeout(initMediaPipe, 100);
             return;
         }
 
-        // Initialize from the local lib folder
         const vision = await window.FilesetResolver.forVisionTasks("lib");
 
-        faceDetector = await window.FaceDetector.createFromOptions(vision, {
+        faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
-                modelAssetPath: "lib/face_detector.task",
+                modelAssetPath: "lib/face_landmarker.task",
                 delegate: "GPU"
             },
             runningMode: "VIDEO"
         });
 
-        console.log("AI Detector Ready!");
-        renderLoop();
+        console.log("Eye Tracking Initialized");
+        startCamera();
     } catch (err) {
         console.error("Initialization error:", err);
     }
 }
 
-//Real-time Detection Loop
+/**
+ * Checks focus and updates timers.
+ * In this version, lookAwayStartTime is nullified immediately upon looking back.
+ */
+function checkFocus(landmarks) {
+    const nose = landmarks[1];
+    const leftEye = landmarks[33];
+    const rightEye = landmarks[263];
+
+    const midPointX = (leftEye.x + rightEye.x) / 2;
+    const horizontalDiff = Math.abs(nose.x - midPointX);
+
+    const isLookingAway = horizontalDiff > 0.03;
+
+    if (isLookingAway) {
+        if (!lookAwayStartTime) lookAwayStartTime = Date.now();
+        
+        if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
+            document.body.style.border = "10px solid red"; 
+        }
+    } else {
+        // INSTANT RESET: Timer and border clear immediately
+        lookAwayStartTime = null;
+        document.body.style.border = "none";
+    }
+}
+
+/**
+ * Renders detection results.
+ * Dots turn red as long as lookAwayStartTime is active.
+ */
+function drawResults(result) {
+    const ctx = canvas.getContext("2d");
+    
+    canvas.width = video.clientWidth;
+    canvas.height = video.clientHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (result.faceLandmarks && result.faceLandmarks.length > 0) {
+        const landmarks = result.faceLandmarks[0];
+        checkFocus(landmarks);
+
+        const eyeIndices = [468, 473];
+        
+        // Instant color swap based on the timer status
+        ctx.fillStyle = lookAwayStartTime ? "red" : "#00ff2a";
+        
+        eyeIndices.forEach(index => {
+            const point = landmarks[index];
+            ctx.beginPath();
+            ctx.arc(point.x * canvas.width, point.y * canvas.height, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+    }
+}
+
 async function renderLoop() {
-    // Only run detection if the video frame has updated
     if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
-        
-        // Perform detection on the current video frame
-        const result = faceDetector.detectForVideo(video, performance.now());
-        drawResults(result.detections);
+        if (faceLandmarker) {
+            const result = faceLandmarker.detectForVideo(video, performance.now());
+            drawResults(result);
+        }
     }
-    
-    // Request the next animation frame for smooth tracking
     requestAnimationFrame(renderLoop);
 }
 
-//Draw square around face
-function drawResults(detections) {
-    const ctx = canvas.getContext("2d");
-
-    // 1. Force the canvas drawing resolution to match the VISUAL size of the video
-    canvas.width = video.clientWidth;
-    canvas.height = video.clientHeight;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    detections.forEach(detection => {
-        const { originX, originY, width, height } = detection.boundingBox;
-
-        // 2. Calculate the ratio between the REAL video size and the DISPLAYED size
-        const scaleX = video.clientWidth / video.videoWidth;
-        const scaleY = video.clientHeight / video.videoHeight;
-
-        //to fix the box being slightly too low
-        const verticalOffset = height * 0.4;
-
-        ctx.strokeStyle = "#FF0000";
-        ctx.lineWidth = 3;
-
-        // 3. Draw the box by multiplying coordinates by the scale
-        ctx.strokeRect(
-            originX * scaleX,
-            (originY - verticalOffset) * scaleY,
-            width * scaleX,
-            height * scaleY
-        );
-    });
-}
-
-// 5. Start Camera and Kickoff AI
 async function startCamera() {
-    const constraints = { video: true, audio: false };
     try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
-        
-        // Wait for video metadata to be loaded so dimensions are available
         video.onloadedmetadata = () => {
-            initMediaPipe();
+            renderLoop();
         };
     } catch (err) {
-        console.error(`Error accessing camera: ${err.name}`, err);
+        console.error("Camera error:", err);
     }
 }
 
-startCamera();
+initMediaPipe();
