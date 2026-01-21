@@ -71,11 +71,24 @@ function checkFocus(landmarks) {
     const nose = landmarks[1];
     const leftEye = landmarks[33];
     const rightEye = landmarks[263];
+    const chin = landmarks[152];
 
+    // Horizontal Tracking
+    //calculates the distance between the eyes
     const midPointX = (leftEye.x + rightEye.x) / 2;
     const horizontalDiff = Math.abs(nose.x - midPointX);
 
-    const isLookingAway = horizontalDiff > 0.03;
+    //Vertical Tracking
+    // calculates how far the nose is from the eye line
+    const midPointY = (leftEye.x + rightEye.x) / 2;
+    const verticalDiff = nose.y - midPointY;
+
+    //Thresholds for what is considered looking away
+    const isLookingSide = horizontalDiff > 0.03;
+    const isLookingUp = verticalDiff < 0.03; 
+    const isLookingDown = verticalDiff > 0.1;
+
+    const isLookingAway = isLookingSide || isLookingUp || isLookingDown
 
     if (isLookingAway) {
         if (!lookAwayStartTime) lookAwayStartTime = Date.now();
