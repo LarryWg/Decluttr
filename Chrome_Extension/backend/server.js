@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const emailRoutes = require('./routes/email');
+const linkedinRoutes = require('./routes/linkedin');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +26,8 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/email', emailRoutes);
+app.use('/api/linkedin', linkedinRoutes);
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
