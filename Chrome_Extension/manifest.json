@@ -15,7 +15,7 @@
     "http://localhost:*/*"
   ],
   "oauth2": {
-    "client_id": "569838728280-d7up9kbkamamsr87gj4ssld1p2jppc2k.apps.googleusercontent.com",
+    "client_id": "569838728280-qtuppin3qsgl364tc1s106aql0n5q07v.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/gmail.readonly"
     ]

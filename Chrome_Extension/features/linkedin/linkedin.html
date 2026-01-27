@@ -1,15 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Email Assistant</title>
-    <link rel="stylesheet" href="linkedin.css">
+  <meta charset="UTF-8">
+  <title>LinkedIn AI Assistant</title>
+  <link rel="stylesheet" href="linkedin.css">
 </head>
 <body>
-    <div class="container">
-        <button class="backButton" id="backBtn">Back</button>
-    </div>
+  <div class="container">
+    <h2>LinkedIn AI Message Generator</h2>
 
-    <script src="linkedin.js"></script>
+    <input id="name" placeholder="Name" />
+    <input id="title" placeholder="Job Title" />
+    <input id="company" placeholder="Company" />
+    <input id="location" placeholder="Location" />
+
+    <button class="button" id="generateBtn">Generate AI Message</button>
+
+    <textarea id="output" placeholder="AI message will appear here..."></textarea>
+
+    <button class="backButton" id="backBtn">Back</button>
+  </div>
+
+  <script src="linkedin.js"></script>
 </body>
 </html>
