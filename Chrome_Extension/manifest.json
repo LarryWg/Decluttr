@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo3VK098ObDcK2n0r7DTQjT1qWPtQ65k2xKcdEak/7y2qc0K9pSrW1xqpm7V8cMpW5xThFFpA/d2CRaj4V0uvGx0SlTrriqatI8fZImhAhPc2N9lqbVH5VvVI+XxNN7xKN6mj2n1s9J0ehuevcp6S5ovzz/SM/0DF+cgkC36zJ7/J4QVjn1n8B730yER9fvRHG9c3B8SSy6NAR3s5rtJU3aUQncl0V+c1WCy+XyVsQhi6/1vWtQxreyWgWd0eTCrnQnVAgFCEjSKuBW3ub1siHlVj+4zJ2NWVZ8NlXtIlu/oOrx0P+++wL458j/9A7U6fep3eGMxtgbUv65UJsr407QIDAQAB",
   "name": "Decluttr",
   "version": "1.0.0",
   "description": "Email cleanup, AI summaries, focus mode & productivity tools.",

@@ -18,28 +18,62 @@
         <!-- Settings Panel (hidden by default) -->
         <div class="settingsPanel" id="settingsPanel" style="display: none;">
             <h3>Settings</h3>
-            <div class="settingItem">
-                <label for="backendUrlInput">Backend URL:</label>
-                <input type="text" id="backendUrlInput" value="http://localhost:3000" placeholder="http://localhost:3000" />
-                <button class="saveButton" id="saveBackendUrlBtn">Save</button>
-            </div>
-            <div class="settingItem">
-                <label>OAuth Redirect URI (for Google Cloud Console):</label>
-                <div style="display: flex; gap: 5px; margin-top: 5px;">
-                    <input type="text" id="redirectUriDisplay" readonly style="flex: 1; font-size: 11px; padding: 6px;" />
-                    <button class="saveButton" id="copyRedirectUriBtn" style="width: auto; padding: 6px 12px;">Copy</button>
+
+            <section class="settingsSection">
+                <h4 class="settingsSectionTitle">Account</h4>
+                <div class="settingItem">
+                    <button class="logoutButton" id="logoutBtn">Log out from Gmail</button>
                 </div>
-            </div>
-            <div class="settingItem">
-                <button class="logoutButton" id="logoutBtn">Logout from Gmail</button>
-            </div>
+            </section>
+
+            <section class="settingsSection">
+                <h4 class="settingsSectionTitle">Appearance</h4>
+                <div class="settingItem">
+                    <label for="themeSelect">Theme</label>
+                    <select id="themeSelect" class="settingSelect">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="settingsSection">
+                <h4 class="settingsSectionTitle">Behavior</h4>
+                <div class="settingItem settingItemRow">
+                    <label for="autoCategorizeCheckbox" class="settingLabelInline">Auto-categorize emails on load</label>
+                    <input type="checkbox" id="autoCategorizeCheckbox" class="settingCheckbox" checked>
+                </div>
+            </section>
+
+            <section class="settingsSection settingsSectionDeveloper">
+                <button type="button" class="settingsDeveloperToggle" id="developerOptionsToggle" aria-expanded="false">
+                    <span>Developer options</span>
+                    <span class="settingsDeveloperChevron" aria-hidden="true">▼</span>
+                </button>
+                <div class="settingsDeveloperContent" id="developerOptionsContent" hidden>
+                    <p class="settingsDeveloperHint">Copy the redirect URI below and add it to your OAuth client in Google Cloud Console (Credentials → your OAuth 2.0 Client ID → Authorized redirect URIs). If you have multiple clients for different testers, add this same URI to each one. After that, testers can connect Gmail without setup.</p>
+                    <div class="settingItem">
+                        <label for="backendUrlInput">Backend URL</label>
+                        <input type="text" id="backendUrlInput" value="http://localhost:3000" placeholder="http://localhost:3000" class="settingInput" />
+                        <button class="saveButton" id="saveBackendUrlBtn">Save</button>
+                    </div>
+                    <div class="settingItem">
+                        <label for="redirectUriDisplay">Redirect URI</label>
+                        <div class="settingInputRow">
+                            <input type="text" id="redirectUriDisplay" readonly class="settingInput settingInputReadonly" />
+                            <button type="button" class="button small" id="copyRedirectUriBtn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- Auth Section (shown when not authenticated) -->
         <div class="authSection" id="authSection">
             <p>Connect your Gmail account to get started</p>
             <button class="button primary" id="connectGmailBtn">Connect Gmail</button>
-            <p class="infoText">You'll be asked to authorize Gmail read-only access</p>
+            <p class="infoText">You'll be asked to sign in and allow access to read and manage your mail.</p>
         </div>
 
         <!-- Loading Spinner -->

@@ -10,6 +10,10 @@ export class DOMReferences {
         this.backBtn = document.getElementById('backBtn');
         this.settingsBtn = document.getElementById('settingsBtn');
         this.settingsPanel = document.getElementById('settingsPanel');
+        this.themeSelect = document.getElementById('themeSelect');
+        this.autoCategorizeCheckbox = document.getElementById('autoCategorizeCheckbox');
+        this.developerOptionsToggle = document.getElementById('developerOptionsToggle');
+        this.developerOptionsContent = document.getElementById('developerOptionsContent');
         this.backendUrlInput = document.getElementById('backendUrlInput');
         this.saveBackendUrlBtn = document.getElementById('saveBackendUrlBtn');
         this.redirectUriDisplay = document.getElementById('redirectUriDisplay');

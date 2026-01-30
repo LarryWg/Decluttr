@@ -68,7 +68,7 @@ async function getAuthToken() {
               console.error('OAuth flow error:', errorMsg);
               
               if (errorMsg.includes('invalid_request') || errorMsg.includes('400') || errorMsg.includes('redirect_uri_mismatch')) {
-                reject(new Error(`Redirect URI mismatch!\n\nPlease add this EXACT redirect URI to your Google Cloud Console:\n\n${redirectUri}\n\nSteps:\n1. Go to Google Cloud Console > APIs & Services > Credentials\n2. Click your OAuth 2.0 Client ID\n3. Under "Authorized redirect URIs", click "ADD URI"\n4. Paste: ${redirectUri}\n5. Click "Save"\n6. Reload extension and try again`));
+                reject(new Error(`redirect_uri_mismatch\n\nAdd this exact URI to your OAuth client in Google Cloud Console (APIs & Services → Credentials → your OAuth 2.0 Client ID → Authorized redirect URIs):\n\n${redirectUri}\n\nIf you have multiple OAuth clients for different testers, add this same URI to each client. The URI is tied to this extension’s ID and stays the same as long as the extension key in manifest.json is unchanged.`));
               } else {
                 reject(new Error('OAuth error: ' + errorMsg));
               }
@@ -92,7 +92,7 @@ async function getAuthToken() {
               if (error === 'access_denied') {
                 reject(new Error('Access denied. Please grant Gmail access permission.'));
               } else if (error === 'invalid_request' || error === 'redirect_uri_mismatch') {
-                reject(new Error(`Redirect URI mismatch!\n\nPlease add this EXACT redirect URI to Google Cloud Console:\n\n${redirectUri}\n\nSteps:\n1. Google Cloud Console > APIs & Services > Credentials\n2. Click your OAuth Client ID\n3. Under "Authorized redirect URIs", add: ${redirectUri}\n4. Save and reload extension`));
+                reject(new Error(`redirect_uri_mismatch\n\nAdd this exact URI to your OAuth client in Google Cloud Console (APIs & Services → Credentials → your OAuth 2.0 Client ID → Authorized redirect URIs):\n\n${redirectUri}\n\nIf you have multiple OAuth clients for different testers, add this same URI to each client.`));
               } else {
                 reject(new Error('OAuth error: ' + error + (errorDesc ? ' - ' + errorDesc : '')));
               }

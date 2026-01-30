@@ -24,7 +24,30 @@ export class EventController {
             this.domRefs.settingsPanel.style.display = isVisible ? 'none' : 'block';
         });
 
-        this.domRefs.saveBackendUrlBtn.addEventListener('click', async () => {
+        if (this.domRefs.themeSelect) {
+            this.domRefs.themeSelect.addEventListener('change', async () => {
+                const theme = this.domRefs.themeSelect.value;
+                await this.settingsService.setTheme(theme);
+                await this.emailController.applyTheme();
+            });
+        }
+
+        if (this.domRefs.autoCategorizeCheckbox) {
+            this.domRefs.autoCategorizeCheckbox.addEventListener('change', async () => {
+                await this.settingsService.setAutoCategorize(this.domRefs.autoCategorizeCheckbox.checked);
+            });
+        }
+
+        if (this.domRefs.developerOptionsToggle && this.domRefs.developerOptionsContent) {
+            this.domRefs.developerOptionsToggle.addEventListener('click', () => {
+                const expanded = this.domRefs.developerOptionsContent.hidden;
+                this.domRefs.developerOptionsContent.hidden = !expanded;
+                this.domRefs.developerOptionsToggle.setAttribute('aria-expanded', String(expanded));
+            });
+        }
+
+        if (this.domRefs.saveBackendUrlBtn) {
+            this.domRefs.saveBackendUrlBtn.addEventListener('click', async () => {
             try {
                 await this.settingsService.saveBackendUrl();
                 this.uiController.showSuccess('Backend URL saved successfully');
@@ -35,8 +58,10 @@ export class EventController {
                 this.uiController.showError(error.message);
             }
         });
+        }
 
-        this.domRefs.copyRedirectUriBtn.addEventListener('click', async () => {
+        if (this.domRefs.copyRedirectUriBtn) {
+            this.domRefs.copyRedirectUriBtn.addEventListener('click', async () => {
             if (this.domRefs.redirectUriDisplay.value) {
                 try {
                     await navigator.clipboard.writeText(this.domRefs.redirectUriDisplay.value);
@@ -51,10 +76,13 @@ export class EventController {
                 }
             }
         });
+        }
 
-        this.domRefs.logoutBtn.addEventListener('click', async () => {
+        if (this.domRefs.logoutBtn) {
+            this.domRefs.logoutBtn.addEventListener('click', async () => {
             await this.emailController.handleLogout();
         });
+        }
 
         // Authentication
         this.domRefs.connectGmailBtn.addEventListener('click', async () => {

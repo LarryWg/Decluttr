@@ -1,35 +1,45 @@
 /**
  * Settings Service - Manages application settings
  */
-import { DEFAULT_BACKEND_URL, STORAGE_KEY_BACKEND_URL } from '../config/constants.js';
+import {
+    DEFAULT_BACKEND_URL,
+    STORAGE_KEY_BACKEND_URL,
+    STORAGE_KEY_THEME,
+    STORAGE_KEY_AUTO_CATEGORIZE,
+    DEFAULT_THEME,
+    DEFAULT_AUTO_CATEGORIZE
+} from '../config/constants.js';
 
 export class SettingsService {
     constructor(domRefs) {
         this.domRefs = domRefs;
     }
 
-    /**
-     * Load settings from storage and populate UI
-     */
     async loadSettings() {
         return new Promise((resolve) => {
-            chrome.storage.local.get([STORAGE_KEY_BACKEND_URL], (result) => {
-                if (result[STORAGE_KEY_BACKEND_URL]) {
-                    this.domRefs.backendUrlInput.value = result[STORAGE_KEY_BACKEND_URL];
-                } else {
-                    this.domRefs.backendUrlInput.value = DEFAULT_BACKEND_URL;
+            chrome.storage.local.get([
+                STORAGE_KEY_BACKEND_URL,
+                STORAGE_KEY_THEME,
+                STORAGE_KEY_AUTO_CATEGORIZE
+            ], (result) => {
+                if (this.domRefs.backendUrlInput) {
+                    this.domRefs.backendUrlInput.value = result[STORAGE_KEY_BACKEND_URL] || DEFAULT_BACKEND_URL;
                 }
-                
-                // Populate redirect URI for OAuth configuration
-                try {
-                    const redirectUri = chrome.identity.getRedirectURL();
-                    const normalizedRedirectUri = redirectUri.endsWith('/') ? redirectUri : redirectUri + '/';
-                    this.domRefs.redirectUriDisplay.value = normalizedRedirectUri;
-                } catch (error) {
-                    console.error('Failed to get redirect URI:', error);
-                    this.domRefs.redirectUriDisplay.value = 'Unable to get redirect URI';
+                if (this.domRefs.themeSelect) {
+                    this.domRefs.themeSelect.value = result[STORAGE_KEY_THEME] || DEFAULT_THEME;
                 }
-                
+                if (this.domRefs.autoCategorizeCheckbox) {
+                    this.domRefs.autoCategorizeCheckbox.checked = result[STORAGE_KEY_AUTO_CATEGORIZE] !== false;
+                }
+                if (this.domRefs.redirectUriDisplay) {
+                    try {
+                        const redirectUri = chrome.identity.getRedirectURL();
+                        const normalized = redirectUri.endsWith('/') ? redirectUri : redirectUri + '/';
+                        this.domRefs.redirectUriDisplay.value = normalized;
+                    } catch (error) {
+                        this.domRefs.redirectUriDisplay.value = 'Unable to get redirect URI';
+                    }
+                }
                 resolve();
             });
         });
@@ -67,18 +77,39 @@ export class SettingsService {
         });
     }
 
-    /**
-     * Get redirect URI for OAuth
-     * @returns {string} Redirect URI
-     */
     getRedirectUri() {
         try {
             const redirectUri = chrome.identity.getRedirectURL();
             return redirectUri.endsWith('/') ? redirectUri : redirectUri + '/';
         } catch (error) {
-            console.error('Failed to get redirect URI:', error);
             return '';
         }
+    }
+
+    async getTheme() {
+        return new Promise((resolve) => {
+            chrome.storage.local.get([STORAGE_KEY_THEME], (result) => {
+                resolve(result[STORAGE_KEY_THEME] || DEFAULT_THEME);
+            });
+        });
+    }
+
+    async setTheme(theme) {
+        const value = ['light', 'dark', 'system'].includes(theme) ? theme : DEFAULT_THEME;
+        await chrome.storage.local.set({ [STORAGE_KEY_THEME]: value });
+        return value;
+    }
+
+    async getAutoCategorize() {
+        return new Promise((resolve) => {
+            chrome.storage.local.get([STORAGE_KEY_AUTO_CATEGORIZE], (result) => {
+                resolve(result[STORAGE_KEY_AUTO_CATEGORIZE] !== false);
+            });
+        });
+    }
+
+    async setAutoCategorize(enabled) {
+        await chrome.storage.local.set({ [STORAGE_KEY_AUTO_CATEGORIZE]: !!enabled });
     }
 }
 

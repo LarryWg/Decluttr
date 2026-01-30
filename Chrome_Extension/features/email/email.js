@@ -12,7 +12,7 @@ import { UnsubscribeService } from './services/UnsubscribeService.js';
 import { SettingsService } from './services/SettingsService.js';
 import { UIController } from './controllers/UIController.js';
 import { EventController } from './controllers/EventController.js';
-import { AUTO_CATEGORIZE_ON_LOAD, DEFAULT_INBOX, INBOX_CATEGORIES } from './config/constants.js';
+import { DEFAULT_INBOX, INBOX_CATEGORIES } from './config/constants.js';
 
 /**
  * Main Email Controller
@@ -57,22 +57,23 @@ class EmailController {
      * Initialize the application
      */
     async init() {
-        // Load stored settings
         await this.settingsService.loadSettings();
-        
-        // Load unsubscribed senders
+        await this.applyTheme();
         await this.emailRepository.loadUnsubscribedSenders();
-        
-        // Setup event listeners
         this.eventController.setupEventListeners();
-        
-        // Initialize inbox tabs UI
         if (this.domRefs.inboxTabs) {
             this.uiController.updateInboxTabsUI();
         }
-        
-        // Check authentication state and initialize UI
         await this.checkAuthAndInit();
+    }
+
+    async applyTheme() {
+        const theme = await this.settingsService.getTheme();
+        let resolved = theme;
+        if (theme === 'system') {
+            resolved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', resolved);
     }
 
     /**
@@ -207,8 +208,8 @@ class EmailController {
             
             this.uiController.hideLoading();
             
-            // Auto-categorize emails if enabled
-            if (AUTO_CATEGORIZE_ON_LOAD && this.emailRepository.getEmails().length > 0) {
+            const autoCategorize = await this.settingsService.getAutoCategorize();
+            if (autoCategorize && this.emailRepository.getEmails().length > 0) {
                 this.uiController.showLoading('Categorizing emails...');
                 await this.autoCategorizeEmails(this.emailRepository.getEmails());
                 this.uiController.hideLoading();
@@ -264,8 +265,8 @@ class EmailController {
             // Add new emails to current list
             this.emailRepository.addEmails(newEmails);
             
-            // Auto-categorize new emails if enabled
-            if (AUTO_CATEGORIZE_ON_LOAD) {
+            const autoCategorize = await this.settingsService.getAutoCategorize();
+            if (autoCategorize) {
                 await this.autoCategorizeEmails(newEmails);
             }
             
