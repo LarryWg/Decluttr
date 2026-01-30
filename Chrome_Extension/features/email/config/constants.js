@@ -13,8 +13,12 @@ export const DEFAULT_AUTO_CATEGORIZE = true;
 // Inbox Categories
 export const INBOX_CATEGORIES = {
     PRIMARY: 'primary',
-    PROMOTIONS: 'promotions'
+    PROMOTIONS: 'promotions',
+    JOB: 'job'
 };
+
+export const STORAGE_KEY_JOB_LABEL_ID = 'gmail_job_label_id';
+export const JOB_LABEL_NAME = 'Decluttr/Job';
 
 export const DEFAULT_INBOX = INBOX_CATEGORIES.PRIMARY;
 export const STORAGE_KEY_UNSUBSCRIBED = 'unsubscribed_senders';

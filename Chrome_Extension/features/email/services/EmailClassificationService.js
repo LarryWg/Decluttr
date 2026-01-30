@@ -9,14 +9,10 @@ export class EmailClassificationService {
         this.emailParserService = emailParserService;
     }
 
-    /**
-     * Map AI category to inbox category
-     * @param {string} aiCategory - AI category from backend
-     * @returns {string} Inbox category ('primary' or 'promotions')
-     */
     mapAiCategoryToInboxCategory(aiCategory) {
-        // "Promotional" → "promotions", everything else → "primary"
-        return aiCategory === 'Promotional' ? INBOX_CATEGORIES.PROMOTIONS : INBOX_CATEGORIES.PRIMARY;
+        if (aiCategory === 'Job') return INBOX_CATEGORIES.JOB;
+        if (aiCategory === 'Promotional') return INBOX_CATEGORIES.PROMOTIONS;
+        return INBOX_CATEGORIES.PRIMARY;
     }
 
     /**

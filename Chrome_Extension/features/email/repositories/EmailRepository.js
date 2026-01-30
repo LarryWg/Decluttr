@@ -1,17 +1,18 @@
 /**
  * Email Repository - Manages email state and cache
  */
-import { DEFAULT_INBOX, STORAGE_KEY_UNSUBSCRIBED } from '../config/constants.js';
+import { DEFAULT_INBOX, STORAGE_KEY_UNSUBSCRIBED, STORAGE_KEY_JOB_LABEL_ID, INBOX_CATEGORIES } from '../config/constants.js';
 
 export class EmailRepository {
     constructor() {
         this.currentEmails = [];
-        this.processingEmails = new Set(); // Track which emails are being processed
-        this.emailCache = new Map(); // Cache AI results per email ID
+        this.processingEmails = new Set();
+        this.emailCache = new Map();
         this.selectedInbox = DEFAULT_INBOX;
-        this.nextPageToken = null; // For pagination
+        this.nextPageToken = null;
         this._loadingMore = false;
-        this.unsubscribedSenders = new Set(); // Track unsubscribed sender domains
+        this.unsubscribedSenders = new Set();
+        this.jobLabelId = null;
     }
 
     // Email management
@@ -32,7 +33,21 @@ export class EmailRepository {
     }
 
     getFilteredEmails() {
-        return this.currentEmails.filter(email => email.inboxCategory === this.selectedInbox);
+        if (this.selectedInbox === INBOX_CATEGORIES.JOB) {
+            return this.currentEmails.filter((e) => {
+                if (e.inboxCategory === INBOX_CATEGORIES.JOB) return true;
+                return this.jobLabelId && e.labelIds && Array.isArray(e.labelIds) && e.labelIds.includes(this.jobLabelId);
+            });
+        }
+        return this.currentEmails.filter((email) => email.inboxCategory === this.selectedInbox);
+    }
+
+    getJobLabelId() {
+        return this.jobLabelId;
+    }
+
+    setJobLabelId(id) {
+        this.jobLabelId = id;
     }
 
     // Cache management
@@ -119,6 +134,15 @@ export class EmailRepository {
             }
         } catch (error) {
             console.error('Failed to load unsubscribed senders:', error);
+        }
+    }
+
+    async loadJobLabelId() {
+        try {
+            const result = await chrome.storage.local.get([STORAGE_KEY_JOB_LABEL_ID]);
+            this.jobLabelId = result[STORAGE_KEY_JOB_LABEL_ID] || null;
+        } catch (error) {
+            console.error('Failed to load job label id:', error);
         }
     }
 }

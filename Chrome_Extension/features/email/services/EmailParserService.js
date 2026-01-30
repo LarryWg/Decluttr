@@ -220,7 +220,8 @@ export class EmailParserService {
             body: body,
             fullContent: fullContent,
             snippet: data.snippet || body.substring(0, 100) + '...',
-            inboxCategory: inboxCategory, // Use Gmail category if available, otherwise default to primary
+            inboxCategory: inboxCategory,
+            labelIds: data.labelIds || [],
             listUnsubscribeUrls: listUnsubscribe.urls,
             listUnsubscribeMailto: listUnsubscribe.mailto,
             listUnsubscribePost: unsubscribePost
