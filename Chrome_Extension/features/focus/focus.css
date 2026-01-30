@@ -182,3 +182,25 @@ body::before {
     color: white !important;
     border-color: rgba(255, 255, 255, 0.6) !important;
 }
+
+/* Animation for the pulsing alert */
+@keyframes pulse-red {
+    0% {
+        border-width: 30px;
+        box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.4);
+    }
+    50% {
+        border-width: 45px;
+        box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.7);
+    }
+    100% {
+        border-width: 30px;
+        box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.4);
+    }
+}
+
+.alert-active {
+    border: 30px solid red !important;
+    animation: pulse-red 1.5s infinite ease-in-out;
+    box-sizing: border-box;
+}

@@ -65,41 +65,39 @@ async function initMediaPipe() {
 
 /**
  * Checks focus and updates timers.
- * In this version, lookAwayStartTime is nullified immediately upon looking back.
+ * LookAwayStartTime is nullified immediately upon looking back.
  */
 function checkFocus(landmarks) {
     const nose = landmarks[1];
     const leftEye = landmarks[33];
     const rightEye = landmarks[263];
-    const chin = landmarks[152];
 
     // Horizontal Tracking
-    //calculates the distance between the eyes
     const midPointX = (leftEye.x + rightEye.x) / 2;
     const horizontalDiff = Math.abs(nose.x - midPointX);
 
-    //Vertical Tracking
-    // calculates how far the nose is from the eye line
-    const midPointY = (leftEye.x + rightEye.x) / 2;
+    // Vertical Tracking
+    const midPointY = (leftEye.y + rightEye.y) / 2;
     const verticalDiff = nose.y - midPointY;
 
-    //Thresholds for what is considered looking away
-    const isLookingSide = horizontalDiff > 0.03;
-    const isLookingUp = verticalDiff < 0.03; 
-    const isLookingDown = verticalDiff > 0.1;
+    // Thresholds
+    const isLookingSide = horizontalDiff > 0.035;
+    const isLookingUp = verticalDiff < 0.01; 
+    const isLookingDown = verticalDiff > 0.14;
 
-    const isLookingAway = isLookingSide || isLookingUp || isLookingDown
+    const isLookingAway = isLookingSide || isLookingUp || isLookingDown;
 
     if (isLookingAway) {
         if (!lookAwayStartTime) lookAwayStartTime = Date.now();
         
         if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
-            document.body.style.border = "10px solid red"; 
+            // Trigger the pulsing CSS class
+            document.body.classList.add('alert-active');
         }
     } else {
-        // INSTANT RESET: Timer and border clear immediately
+        // Stop the alert and reset timers immediately
         lookAwayStartTime = null;
-        document.body.style.border = "none";
+        document.body.classList.remove('alert-active');
     }
 }
 
@@ -117,7 +115,8 @@ function drawResults(result) {
     if (result.faceLandmarks && result.faceLandmarks.length > 0) {
         const landmarks = result.faceLandmarks[0];
         checkFocus(landmarks);
-
+        //Drawing the dots on the eyes:
+        /*
         const eyeIndices = [468, 473];
         
         // Instant color swap based on the timer status
@@ -129,7 +128,9 @@ function drawResults(result) {
             ctx.arc(point.x * canvas.width, point.y * canvas.height, 4, 0, 2 * Math.PI);
             ctx.fill();
         });
+        */
     }
+    
 }
 
 async function renderLoop() {
