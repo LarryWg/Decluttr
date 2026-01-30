@@ -9,14 +9,44 @@
   <div class="container">
     <h2>LinkedIn AI Message Generator</h2>
 
-    <input id="name" placeholder="Name" />
-    <input id="title" placeholder="Job Title" />
-    <input id="company" placeholder="Company" />
-    <input id="location" placeholder="Location" />
+    <!-- Search Section -->
+    <div class="search-section">
+      <h3>Search LinkedIn Profiles</h3>
+      <input id="searchQuery" placeholder="e.g., ceo automotive united states" />
+      <button class="button" id="searchBtn">Search Profiles</button>
+      <p class="search-hint">Searches LinkedIn profiles using Google. Try searches like "ceo automotive united states" or "software engineer toronto"</p>
+    </div>
 
-    <button class="button" id="generateBtn">Generate AI Message</button>
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+      <div class="spinner"></div>
+      <p>Searching profiles...</p>
+    </div>
 
-    <textarea id="output" placeholder="AI message will appear here..."></textarea>
+    <!-- Search Results Section -->
+    <div id="searchResults" class="search-results" style="display: none;">
+      <h3>Select a Profile</h3>
+      <div id="profilesList" class="profiles-list">
+        <!-- Profile cards will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Manual Input Section -->
+    <div class="manual-section">
+      <h3>Or Enter Manually</h3>
+      <input id="name" placeholder="Name" />
+      <input id="title" placeholder="Job Title" />
+      <input id="company" placeholder="Company" />
+      <input id="location" placeholder="Location" />
+      <button class="button" id="generateBtn">Generate AI Message</button>
+    </div>
+
+    <!-- Output Section -->
+    <div class="output-section">
+      <h3>Generated Message</h3>
+      <textarea id="output" placeholder="AI message will appear here..."></textarea>
+      <button class="button small" id="copyBtn" style="display: none;">Copy to Clipboard</button>
+    </div>
 
     <button class="backButton" id="backBtn">Back</button>
   </div>
