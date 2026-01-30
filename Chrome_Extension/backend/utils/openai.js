@@ -29,10 +29,11 @@ async function summarizeEmail(emailContent, apiKey) {
 
   const openai = createOpenAIClient(apiKey);
 
-  const prompt = `Analyze the following email and provide:
+  const prompt = `Analyze each email. Provide:
 1. A concise 2-3 sentence summary focusing on actionable content
-2. A category: "Work", "Personal", "Promotional", "Spam", "Newsletter", or "Other"
+2. A category: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other". If the email is or could be a job application email (e.g. application confirmation, "we received your application", interview invite/scheduling, rejection, offer, recruiter email), set category to "Job". When in doubt, prefer "Job" for any application-related wording.
 3. Whether it contains an unsubscribe link (true/false)
+4. jobType: only when category is "Job", set to one of "application_confirmation", "interview", "rejection", "offer"; otherwise set to null.
 
 Email content:
 ${truncatedContent}
@@ -41,7 +42,8 @@ Respond ONLY with valid JSON in this exact format:
 {
   "summary": "2-3 sentence summary here",
   "category": "one of the categories above",
-  "hasUnsubscribe": true or false
+  "hasUnsubscribe": true or false,
+  "jobType": "application_confirmation" or "interview" or "rejection" or "offer" or null
 }`;
 
   try {
@@ -74,16 +76,27 @@ Respond ONLY with valid JSON in this exact format:
       throw new Error('Invalid response format from AI');
     }
 
-    // Validate category
-    const validCategories = ['Work', 'Personal', 'Promotional', 'Spam', 'Newsletter', 'Other'];
+    const categoryRaw = (result.category && typeof result.category === 'string') ? result.category.trim() : '';
+    if (categoryRaw === 'Job application' || categoryRaw.toLowerCase() === 'job application') {
+      result.category = 'Job';
+    }
+    const validCategories = ['Personal', 'Promotional', 'Spam', 'Newsletter', 'Job', 'Other'];
     if (!validCategories.includes(result.category)) {
       result.category = 'Other';
     }
+    if (result.category === 'Work') {
+      result.category = 'Other';
+    }
+    const validJobTypes = ['application_confirmation', 'interview', 'rejection', 'offer'];
+    const jobType = result.category === 'Job' && result.jobType && validJobTypes.includes(result.jobType)
+      ? result.jobType
+      : null;
 
     return {
       summary: result.summary.trim(),
       category: result.category,
-      hasUnsubscribe: result.hasUnsubscribe
+      hasUnsubscribe: result.hasUnsubscribe,
+      jobType
     };
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -116,7 +129,7 @@ async function categorizeEmail(emailContent, apiKey) {
 
   const openai = createOpenAIClient(apiKey);
 
-  const prompt = `Categorize the following email into one of these categories: "Work", "Personal", "Promotional", "Spam", "Newsletter", or "Other".
+  const prompt = `Categorize the following email into one of these categories: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other". Use "Job" for any email that could possibly be job-application-related (confirmations, interviews, rejections, offers, recruiter emails). When in doubt, prefer "Job".
 
 Email content:
 ${truncatedContent}
@@ -155,7 +168,7 @@ Respond ONLY with valid JSON in this exact format:
       throw new Error('Invalid response format from AI');
     }
 
-    const validCategories = ['Work', 'Personal', 'Promotional', 'Spam', 'Newsletter', 'Other'];
+    const validCategories = ['Personal', 'Promotional', 'Spam', 'Newsletter', 'Job', 'Other'];
     if (!validCategories.includes(result.category)) {
       result.category = 'Other';
     }

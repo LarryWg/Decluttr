@@ -6,12 +6,13 @@ import { escapeHtml, convertUrlsToLinks } from '../utils/textUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 
 export class UIController {
-    constructor(domRefs, emailRepository, emailClassificationService, backendApiService, unsubscribeService) {
+    constructor(domRefs, emailRepository, emailClassificationService, backendApiService, unsubscribeService, onJobEmailClassified = null) {
         this.domRefs = domRefs;
         this.emailRepository = emailRepository;
         this.emailClassificationService = emailClassificationService;
         this.backendApiService = backendApiService;
         this.unsubscribeService = unsubscribeService;
+        this.onJobEmailClassified = onJobEmailClassified;
     }
 
     /**
@@ -28,8 +29,11 @@ export class UIController {
             // Update empty state message based on selected inbox
             const emptyStateText = this.domRefs.emptyState.querySelector('p');
             if (emptyStateText) {
-                if (this.emailRepository.getSelectedInbox() === INBOX_CATEGORIES.PROMOTIONS) {
+                const selected = this.emailRepository.getSelectedInbox();
+                if (selected === INBOX_CATEGORIES.PROMOTIONS) {
                     emptyStateText.textContent = 'No promotional emails found';
+                } else if (selected === INBOX_CATEGORIES.JOB) {
+                    emptyStateText.textContent = 'No job application emails found';
                 } else {
                     emptyStateText.textContent = 'No emails found';
                 }
@@ -71,6 +75,7 @@ export class UIController {
         const cachedResults = this.emailRepository.getCachedResult(email.id);
         const category = cachedResults ? cachedResults.category : null;
         const hasUnsubscribe = cachedResults ? cachedResults.hasUnsubscribe : false;
+        const isJobApplication = category === 'Job' || email.inboxCategory === INBOX_CATEGORIES.JOB;
 
         // Format date (relative time)
         const dateStr = formatDate(email.date);
@@ -84,7 +89,8 @@ export class UIController {
             <div class="emailPreview">${escapeHtml(email.snippet)}</div>
             <div class="emailActions">
                 <div class="emailBadges">
-                    ${category ? `<span class="categoryBadge ${category.toLowerCase()}">${category}</span>` : ''}
+                    ${category && category !== 'Job' ? `<span class="categoryBadge ${category.toLowerCase()}">${category}</span>` : ''}
+                    ${isJobApplication ? '<span class="jobApplicationBadge">Job application</span>' : ''}
                     ${hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe Available</span>' : ''}
                 </div>
                 <button class="button small processEmailBtn" style="margin-top: 8px; width: 100%;">Process with AI</button>
@@ -142,6 +148,11 @@ export class UIController {
             // Update card with results
             this.updateEmailCardWithResults(card, results);
 
+            // If classified as Job, apply Gmail label (same as auto-categorize)
+            if (results.category === 'Job' && typeof this.onJobEmailClassified === 'function') {
+                this.onJobEmailClassified(email).catch(err => console.warn('Job label apply failed:', err));
+            }
+
             this.emailRepository.removeProcessing(email.id);
             processBtn.textContent = originalText;
             processBtn.disabled = false;
@@ -186,7 +197,7 @@ export class UIController {
         }
         
         // Remove existing badges from container
-        const existingBadges = badgesContainer.querySelectorAll('.categoryBadge, .unsubscribeBadge');
+        const existingBadges = badgesContainer.querySelectorAll('.categoryBadge, .jobApplicationBadge, .unsubscribeBadge');
         existingBadges.forEach(badge => badge.remove());
         
         // Remove aiSummary if it exists (it's not in badges container)
@@ -195,12 +206,20 @@ export class UIController {
             existingSummary.remove();
         }
 
-        // Add category badge
-        if (results.category) {
+        // Add category badge (skip "Job" — we show Job application badge instead)
+        if (results.category && results.category !== 'Job') {
             const categoryBadge = document.createElement('span');
             categoryBadge.className = `categoryBadge ${results.category.toLowerCase()}`;
             categoryBadge.textContent = results.category;
             badgesContainer.appendChild(categoryBadge);
+        }
+
+        // Add Job application badge (like Unsubscribe Available)
+        if (results.category === 'Job') {
+            const jobBadge = document.createElement('span');
+            jobBadge.className = 'jobApplicationBadge';
+            jobBadge.textContent = 'Job application';
+            badgesContainer.appendChild(jobBadge);
         }
 
         // Add unsubscribe badge
@@ -245,9 +264,10 @@ export class UIController {
             this.domRefs.modalAiResults.innerHTML = `
                 <h4>AI Analysis</h4>
                 <div class="aiResults">
-                    <div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">
-                        ${cachedResults.category}
-                    </div>
+                    ${cachedResults.category === 'Job'
+                        ? '<div class="jobApplicationBadge" style="margin-bottom: 10px;">Job application</div>'
+                        : `<div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">${cachedResults.category}</div>`
+                    }
                     <div class="aiSummary">
                         <strong>Summary:</strong><br>
                         ${escapeHtml(cachedResults.summary)}

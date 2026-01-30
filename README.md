@@ -69,36 +69,6 @@ Chrome extension for email management, AI summaries, and productivity tools.
 - **Behavior**: Auto-categorize emails on load (toggle).
 - **Developer options** (collapsed): Backend URL, Redirect URI (for OAuth setup). Copy the Redirect URI and add it to your OAuth client(s) in Google Cloud Console so Connect Gmail works.
 
-## Development
-
-### API (backend)
-
-- `POST /api/email/summarize` – AI summary, category, unsubscribe detection
-- `POST /api/email/categorize` – Categorize email
-- `POST /api/email/detect-unsubscribe` – Detect unsubscribe links
-- `GET /health` – Health check
-
-See [Chrome_Extension/backend/README.md](Chrome_Extension/backend/README.md) for request/response formats.
-
-### Extension structure
-
-```
-Chrome_Extension/
-├── features/
-│   ├── email/           # Email Assistant
-│   │   ├── config/      # Constants
-│   │   ├── controllers/ # EventController, UIController
-│   │   ├── repositories/# EmailRepository
-│   │   ├── services/    # GmailApi, BackendApi, Settings, Unsubscribe, etc.
-│   │   ├── utils/
-│   │   ├── email.html, email.css, email.js
-│   │   └── gmail-auth.js
-│   ├── focus/           # Focus mode
-│   └── linkedin/
-├── popup/               # Main popup (App.html, App.js)
-└── manifest.json
-```
-
 ## Troubleshooting
 
 - **Backend**: Ensure the backend is running and the Backend URL in Settings → Developer options is correct. CORS must allow the extension origin.

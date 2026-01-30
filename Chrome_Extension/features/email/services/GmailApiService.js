@@ -1,7 +1,7 @@
 /**
  * Gmail API Service - Handles Gmail API calls
  */
-import { MAX_EMAILS_TO_FETCH } from '../config/constants.js';
+import { MAX_EMAILS_TO_FETCH, STORAGE_KEY_JOB_LABEL_ID, JOB_LABEL_NAME } from '../config/constants.js';
 import { EmailParserService } from './EmailParserService.js';
 
 export class GmailApiService {
@@ -89,6 +89,118 @@ export class GmailApiService {
 
         const data = await response.json();
         return this.parser.parseEmailData(data);
+    }
+
+    async getOrCreateJobLabel() {
+        const token = await getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+        const stored = await new Promise((resolve) => {
+            chrome.storage.local.get([STORAGE_KEY_JOB_LABEL_ID], (r) => resolve(r[STORAGE_KEY_JOB_LABEL_ID] || null));
+        });
+        if (stored) {
+            return stored;
+        }
+        const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!listRes.ok) {
+            if (listRes.status === 401) {
+                await refreshToken();
+                return this.getOrCreateJobLabel();
+            }
+            throw new Error(`Gmail labels list failed: ${listRes.status}`);
+        }
+        const listData = await listRes.json();
+        const found = (listData.labels || []).find((l) => l.name === JOB_LABEL_NAME);
+        if (found) {
+            await new Promise((resolve) => {
+                chrome.storage.local.set({ [STORAGE_KEY_JOB_LABEL_ID]: found.id }, resolve);
+            });
+            return found.id;
+        }
+        const createRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: JOB_LABEL_NAME })
+        });
+        if (!createRes.ok) {
+            if (createRes.status === 401) {
+                await refreshToken();
+                return this.getOrCreateJobLabel();
+            }
+            const errBody = await createRes.text().catch(() => '');
+            throw new Error(`Gmail label create failed: ${createRes.status} ${errBody.slice(0, 100)}`);
+        }
+        const createData = await createRes.json();
+        const labelId = createData.id;
+        await new Promise((resolve) => {
+            chrome.storage.local.set({ [STORAGE_KEY_JOB_LABEL_ID]: labelId }, resolve);
+        });
+        return labelId;
+    }
+
+    async addLabelToMessages(messageIds, labelId) {
+        let token = await getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+        const results = { success: [], failed: [] };
+        const batchSize = 5;
+        for (let i = 0; i < messageIds.length; i += batchSize) {
+            const batch = messageIds.slice(i, i + batchSize);
+            const batchResults = await Promise.all(batch.map(async (messageId) => {
+                try {
+                    let response = await fetch(
+                        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ addLabelIds: [labelId] })
+                        }
+                    );
+                    if (response.status === 401) {
+                        await refreshToken();
+                        token = await getAuthToken();
+                        response = await fetch(
+                            `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ addLabelIds: [labelId] })
+                            }
+                        );
+                    }
+                    if (response.ok) {
+                        return { success: true, id: messageId };
+                    }
+                    return { success: false, id: messageId, error: `HTTP ${response.status}` };
+                } catch (error) {
+                    return { success: false, id: messageId, error: error.message };
+                }
+            }));
+            batchResults.forEach((r) => {
+                if (r.success) {
+                    results.success.push(r.id);
+                } else {
+                    results.failed.push({ id: r.id, error: r.error });
+                }
+            });
+            if (i + batchSize < messageIds.length) {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+            }
+        }
+        return results;
     }
 
     /**

@@ -42,7 +42,8 @@ class EmailController {
             this.emailRepository,
             this.emailClassificationService,
             this.backendApiService,
-            this.unsubscribeService
+            this.unsubscribeService,
+            (email) => this.applyJobLabelForEmail(email)
         );
         
         this.eventController = new EventController(
@@ -60,6 +61,7 @@ class EmailController {
         await this.settingsService.loadSettings();
         await this.applyTheme();
         await this.emailRepository.loadUnsubscribedSenders();
+        await this.emailRepository.loadJobLabelId();
         this.eventController.setupEventListeners();
         if (this.domRefs.inboxTabs) {
             this.uiController.updateInboxTabsUI();
@@ -323,36 +325,53 @@ class EmailController {
         for (let i = 0; i < emails.length; i += batchSize) {
             const batch = emails.slice(i, i + batchSize);
             await Promise.all(batch.map(async (email) => {
-                // Skip if already processed
                 const cachedResults = this.emailRepository.getCachedResult(email.id);
                 if (cachedResults) {
                     email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cachedResults.category);
+                    if (email.inboxCategory === INBOX_CATEGORIES.JOB) {
+                        await this.applyJobLabelForEmail(email);
+                    }
                     return;
                 }
-                
-                // Skip if already categorized by Gmail labels
-                if (email.inboxCategory !== DEFAULT_INBOX) {
-                    return;
-                }
-                
                 try {
                     const results = await this.backendApiService.processEmailWithAI(email);
                     this.emailRepository.setCache(email.id, results);
-                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category);
+                    const mappedCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category);
+                    email.inboxCategory = mappedCategory;
+                    if (mappedCategory === INBOX_CATEGORIES.JOB) {
+                        await this.applyJobLabelForEmail(email).catch(err => console.error(`Job label error for ${email.id}:`, err));
+                    }
                 } catch (error) {
                     console.error(`Failed to auto-categorize email ${email.id}:`, error);
-                    // Keep default category on error
                 }
             }));
-            
-            // Small delay between batches to avoid rate limiting
             if (i + batchSize < emails.length) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise((resolve) => setTimeout(resolve, 500));
             }
         }
-        
-        // Re-render to reflect any category changes
         this.uiController.renderEmailList();
+    }
+
+    /**
+     * Apply Gmail "Decluttr/Job" label to an email (used by auto-categorize and manual "Process with AI").
+     * @param {Object} email - Email object
+     */
+    async applyJobLabelForEmail(email) {
+        const jobLabelId = this.emailRepository.getJobLabelId();
+        const hasJobLabel = jobLabelId && email.labelIds && Array.isArray(email.labelIds) && email.labelIds.includes(jobLabelId);
+        if (hasJobLabel) return;
+        let labelId = jobLabelId;
+        if (!labelId) {
+            labelId = await this.gmailApiService.getOrCreateJobLabel();
+            this.emailRepository.setJobLabelId(labelId);
+        }
+        const labelResult = await this.gmailApiService.addLabelToMessages([email.id], labelId);
+        if (labelResult.success.length > 0) {
+            email.labelIds = [...(email.labelIds || []), labelId];
+        }
+        if (labelResult.failed.length > 0) {
+            console.warn(`Failed to add job label to ${email.id}:`, labelResult.failed[0].error);
+        }
     }
 
     /**
