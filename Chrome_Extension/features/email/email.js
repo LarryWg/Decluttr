@@ -288,12 +288,37 @@ class EmailController {
     }
 
     /**
+     * Open selected senders' first email in Gmail so user can use Gmail's Unsubscribe button.
+     */
+    openSelectedSendersInGmail() {
+        if (!this.domRefs.senderList) return;
+        const checkboxes = this.domRefs.senderList.querySelectorAll('.senderCheckbox:checked');
+        if (checkboxes.length === 0) {
+            this.uiController.showError('Select at least one sender');
+            return;
+        }
+        const selectedDomains = Array.from(checkboxes).map(cb => cb.dataset.domain).filter(Boolean);
+        const senderGroups = this.emailClassificationService.groupEmailsBySender();
+        const gmailBase = 'https://mail.google.com/mail/u/0/#inbox/';
+        selectedDomains.forEach((domain, index) => {
+            const sender = senderGroups.get(domain);
+            if (sender?.emails?.length > 0 && sender.emails[0].threadId) {
+                setTimeout(() => {
+                    window.open(gmailBase + sender.emails[0].threadId, '_blank', 'noopener');
+                }, index * 300);
+            }
+        });
+        if (this.domRefs.unsubscribeModal) {
+            this.domRefs.unsubscribeModal.style.display = 'none';
+        }
+    }
+
+    /**
      * Auto-categorize emails in the background
      * @param {Array} emails - Array of emails to categorize
      */
     async autoCategorizeEmails(emails) {
-        // Process emails in batches to avoid overwhelming the backend
-        const batchSize = 5;
+        const batchSize = 15;
         for (let i = 0; i < emails.length; i += batchSize) {
             const batch = emails.slice(i, i + batchSize);
             await Promise.all(batch.map(async (email) => {
@@ -343,9 +368,10 @@ class EmailController {
     }
 
     /**
-     * Process unsubscribe for selected senders
+     * Process unsubscribe and delete for selected senders
+     * @param {boolean} deleteEmails - Whether to delete emails after unsubscribing
      */
-    async processUnsubscribe() {
+    async processUnsubscribeAndDelete(deleteEmails = false) {
         if (!this.domRefs.senderList || !this.domRefs.confirmUnsubscribeBtn) return;
         
         const checkboxes = this.domRefs.senderList.querySelectorAll('.senderCheckbox:checked');
@@ -360,39 +386,69 @@ class EmailController {
         
         // Disable button and show loading
         this.domRefs.confirmUnsubscribeBtn.disabled = true;
-        this.domRefs.confirmUnsubscribeBtn.textContent = 'Processing...';
+        this.domRefs.confirmUnsubscribeBtn.textContent = 'Processing…';
         
         const results = {
             success: [],
             failed: [],
-            needsFilter: []
+            needsFilter: [],
+            deleted: []
         };
         
         try {
             for (const sender of selectedSenders) {
                 try {
+                    // Step 1: Unsubscribe
+                    let unsubscribed = false;
+                    
                     if (sender.unsubscribeMethod === 'url' && sender.unsubscribeUrl) {
                         const requiresPost = sender.requiresPost || false;
                         const result = await this.unsubscribeService.unsubscribeViaUrl(sender.unsubscribeUrl, requiresPost);
                         if (result.success) {
-                            // Mark as unsubscribed
                             await this.emailRepository.markUnsubscribed(sender.domain);
                             results.success.push({ ...sender, ...result });
+                            unsubscribed = true;
                         } else {
                             results.failed.push({ sender, ...result });
                         }
                     } else if (sender.unsubscribeMethod === 'mailto' && sender.unsubscribeUrl) {
                         const result = await this.unsubscribeService.unsubscribeViaMailto(sender.unsubscribeUrl, sender.domain);
                         if (result.success) {
-                            // Mark as unsubscribed
                             await this.emailRepository.markUnsubscribed(sender.domain);
                             results.success.push({ ...sender, ...result });
+                            unsubscribed = true;
                         } else {
                             results.failed.push({ sender, ...result });
                         }
                     } else {
-                        // No unsubscribe support - offer filter creation
                         results.needsFilter.push(sender);
+                    }
+                    
+                    // Step 2: Trash emails if requested
+                    if (deleteEmails && sender.emailIds && sender.emailIds.length > 0) {
+                        try {
+                            const trashResult = await this.gmailApiService.trashEmails(sender.emailIds);
+                            if (trashResult.success.length > 0) {
+                                results.deleted.push({
+                                    domain: sender.domain,
+                                    count: trashResult.success.length
+                                });
+                                const currentEmails = this.emailRepository.getEmails();
+                                const remainingEmails = currentEmails.filter(
+                                    email => !trashResult.success.includes(email.id)
+                                );
+                                this.emailRepository.setEmails(remainingEmails);
+                            }
+                            const failed403 = trashResult.failed.some(f => f.status === 403);
+                            if (failed403 && trashResult.success.length === 0) {
+                                this.uiController.showError('To move emails to trash, log out and connect Gmail again (new permission required).');
+                            } else if (trashResult.failed.length > 0) {
+                                console.warn(`Failed to trash ${trashResult.failed.length} emails from ${sender.domain}`);
+                            }
+                        } catch (deleteError) {
+                            console.error(`Failed to trash emails from ${sender.domain}:`, deleteError);
+                            this.uiController.showError('Failed to move emails to trash: ' + deleteError.message);
+                        }
                     }
                     
                     // Small delay to avoid rate limiting
@@ -403,13 +459,18 @@ class EmailController {
             }
             
             // Show results
-            this.uiController.showUnsubscribeResults(results);
+            this.uiController.showUnsubscribeResults(results, deleteEmails);
+            
+            // Refresh email list to reflect deletions
+            if (deleteEmails && results.deleted.length > 0) {
+                this.uiController.renderEmailList();
+            }
             
         } catch (error) {
             this.uiController.showError('Failed to process unsubscribe: ' + error.message);
         } finally {
             this.domRefs.confirmUnsubscribeBtn.disabled = false;
-            this.domRefs.confirmUnsubscribeBtn.textContent = 'Unsubscribe Selected';
+            this.domRefs.confirmUnsubscribeBtn.textContent = 'Unsubscribe & optionally trash';
         }
     }
 }

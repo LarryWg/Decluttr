@@ -39,6 +39,7 @@ export class DOMReferences {
         this.senderList = document.getElementById('senderList');
         this.cancelUnsubscribeBtn = document.getElementById('cancelUnsubscribeBtn');
         this.confirmUnsubscribeBtn = document.getElementById('confirmUnsubscribeBtn');
+        this.openInGmailBtn = document.getElementById('openInGmailBtn');
     }
 }
 

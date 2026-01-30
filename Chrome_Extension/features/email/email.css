@@ -582,7 +582,7 @@ html::before {
     color: rgba(255, 255, 255, 0.8);
 }
 
-/* Unsubscribe Modal */
+/* Unsubscribe Modal – light theme */
 .unsubscribeModal {
     display: none;
     position: fixed;
@@ -590,9 +590,7 @@ html::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 1000;
     justify-content: center;
     align-items: center;
@@ -604,79 +602,152 @@ html::before {
     display: flex !important;
 }
 
-/* Email Modal - Glass style */
-
-.unsubscribeModal .modalContent {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(15px) saturate(180%);
-    -webkit-backdrop-filter: blur(15px) saturate(180%);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 32px 0 rgba(102, 126, 234, 0.3);
+.unsubscribeModal .unsubscribeModalContent {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
     padding: 24px;
     max-width: 500px;
     width: 100%;
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
+    border: 1px solid #e5e7eb;
 }
 
-.unsubscribeModal h3 {
+.unsubscribeModalHint {
     margin: 0 0 16px 0;
-    color: rgba(255, 255, 255, 0.98);
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
 }
 
-.senderList {
-    max-height: 400px;
-    overflow-y: auto;
+.unsubscribeModalDeleteOption {
     margin-bottom: 16px;
+    padding: 12px 14px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
 }
 
-.senderItem {
+.unsubscribeModalDeleteLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.unsubscribeModalDeleteCheckbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.unsubscribeModalDeleteHint {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 6px 0 0 28px;
+}
+
+.unsubscribeModal .senderList {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.unsubscribeModal .senderItem {
     margin-bottom: 8px;
 }
 
-.senderCheckboxLabel {
+.unsubscribeModal .senderCheckboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
     transition: background 0.2s ease;
 }
 
-.senderCheckboxLabel:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
+.unsubscribeModal .senderCheckboxLabel:hover {
+    background: #f3f4f6;
 }
 
-.senderCheckboxLabel:has(input:disabled) {
-    opacity: 0.6;
+.unsubscribeModal .senderCheckboxLabel:has(input:disabled) {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
-.methodBadge {
+.unsubscribeModal .senderCheckbox {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.unsubscribeModal .senderCheckboxLabel:has(input:disabled) .senderCheckbox {
+    cursor: not-allowed;
+}
+
+.unsubscribeModal .senderCheckboxText {
+    flex: 1;
+}
+
+.unsubscribeModal .senderDisplayName {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.unsubscribeModal .senderMeta {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.unsubscribeModal .methodBadge {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 12px;
+    border-radius: 10px;
     font-size: 10px;
     font-weight: 600;
     margin-left: 4px;
 }
 
-.methodBadge.supported {
-    background: rgba(34, 197, 94, 0.4);
-    color: rgba(255, 255, 255, 0.95);
+.unsubscribeModal .methodBadge.supported {
+    background: #d1fae5;
+    color: #065f46;
 }
 
-.methodBadge.unsupported {
-    background: rgba(158, 158, 158, 0.4);
-    color: rgba(255, 255, 255, 0.8);
+.unsubscribeModal .methodBadge.unsupported {
+    background: #e5e7eb;
+    color: #4b5563;
 }
 
-.modalActions {
+.unsubscribeModal .modalActions {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 0;
 }
 
-.modalActions .button {
+.unsubscribeModal .modalActions .button {
     flex: 1;
+    min-width: 120px;
+}
+
+.unsubscribeModal .modalActions .button.primary {
+    background: #4f46e5;
+    color: #fff;
+    border-color: #4f46e5;
+}
+
+.unsubscribeModal .modalActions .button.primary:hover {
+    background: #4338ca;
+    color: #fff;
 }
 
 .emailModal {

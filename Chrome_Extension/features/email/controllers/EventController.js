@@ -96,10 +96,15 @@ export class EventController {
             });
         }
         
-        // Manage Promotions button
         if (this.domRefs.managePromotionsBtn) {
             this.domRefs.managePromotionsBtn.addEventListener('click', () => {
                 this.uiController.showUnsubscribeModal();
+            });
+        }
+
+        if (this.domRefs.openInGmailBtn) {
+            this.domRefs.openInGmailBtn.addEventListener('click', () => {
+                this.emailController.openSelectedSendersInGmail();
             });
         }
         
@@ -116,9 +121,14 @@ export class EventController {
             });
         }
         
+
         if (this.domRefs.confirmUnsubscribeBtn) {
             this.domRefs.confirmUnsubscribeBtn.addEventListener('click', async () => {
-                await this.emailController.processUnsubscribe();
+                // Check if delete checkbox is checked
+                const deleteCheckbox = document.getElementById('deleteEmailsCheckbox');
+                const shouldDelete = deleteCheckbox ? deleteCheckbox.checked : false;
+                
+                await this.emailController.processUnsubscribeAndDelete(shouldDelete);
             });
         }
         

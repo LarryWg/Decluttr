@@ -3,7 +3,7 @@
  */
 
 export const DEFAULT_BACKEND_URL = 'http://localhost:3000';
-export const MAX_EMAILS_TO_FETCH = 20;
+export const MAX_EMAILS_TO_FETCH = 50;
 export const STORAGE_KEY_BACKEND_URL = 'backend_url';
 export const AUTO_CATEGORIZE_ON_LOAD = true; // Automatically categorize emails when Gmail is connected
 

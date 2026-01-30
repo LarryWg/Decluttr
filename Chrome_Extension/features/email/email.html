@@ -79,18 +79,22 @@
 
     <!-- Unsubscribe Modal -->
     <div class="unsubscribeModal" id="unsubscribeModal" style="display: none;">
-        <div class="modalContent">
-            <button class="closeButton" id="closeUnsubscribeModalBtn">×</button>
-            <h3>Unsubscribe from Senders</h3>
-            <p style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">
-                Select senders to unsubscribe from. Senders without unsubscribe support can be filtered instead.
-            </p>
+        <div class="modalContent unsubscribeModalContent">
+            <p class="unsubscribeModalHint">Use Gmail&rsquo;s Unsubscribe button for reliable one-click unsubscribe.</p>
+            <div class="unsubscribeModalDeleteOption">
+                <label class="unsubscribeModalDeleteLabel">
+                    <input type="checkbox" id="deleteEmailsCheckbox" class="unsubscribeModalDeleteCheckbox">
+                    <span>Also move all emails from selected senders to trash</span>
+                </label>
+                <p class="unsubscribeModalDeleteHint">Emails can be recovered within 30 days.</p>
+            </div>
             <div class="senderList" id="senderList">
                 <!-- Sender list will be inserted here -->
             </div>
-            <div class="modalActions" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="button" id="cancelUnsubscribeBtn" style="flex: 1;">Cancel</button>
-                <button class="button primary" id="confirmUnsubscribeBtn" style="flex: 1;">Unsubscribe Selected</button>
+            <div class="modalActions">
+                <button class="button" id="openInGmailBtn">Open in Gmail</button>
+                <button class="button" id="cancelUnsubscribeBtn">Cancel</button>
+                <button class="button primary" id="confirmUnsubscribeBtn">Unsubscribe &amp; optionally trash</button>
             </div>
         </div>
     </div>

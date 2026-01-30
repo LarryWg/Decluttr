@@ -325,18 +325,11 @@ export class UIController {
             const methodClass = sender.hasUnsubscribe ? 'supported' : 'unsupported';
             
             senderItem.innerHTML = `
-                <label class="senderCheckboxLabel" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: ${sender.hasUnsubscribe ? 'pointer' : 'not-allowed'};">
-                    <input type="checkbox" class="senderCheckbox" data-domain="${sender.domain}" 
-                           ${sender.hasUnsubscribe ? '' : 'disabled'} 
-                           style="cursor: ${sender.hasUnsubscribe ? 'pointer' : 'not-allowed'};">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; color: rgba(255, 255, 255, 0.95); margin-bottom: 4px;">
-                            ${escapeHtml(sender.displayName)}
-                        </div>
-                        <div style="font-size: 11px; color: rgba(255, 255, 255, 0.7);">
-                            ${sender.emailCount} email${sender.emailCount !== 1 ? 's' : ''} • 
-                            <span class="methodBadge ${methodClass}">${methodLabel}</span>
-                        </div>
+                <label class="senderCheckboxLabel">
+                    <input type="checkbox" class="senderCheckbox" data-domain="${sender.domain}" ${sender.hasUnsubscribe ? '' : 'disabled'}>
+                    <div class="senderCheckboxText">
+                        <div class="senderDisplayName">${escapeHtml(sender.displayName)}</div>
+                        <div class="senderMeta">${sender.emailCount} email${sender.emailCount !== 1 ? 's' : ''} • <span class="methodBadge ${methodClass}">${methodLabel}</span></div>
                     </div>
                 </label>
             `;
@@ -346,10 +339,11 @@ export class UIController {
     }
 
     /**
-     * Show unsubscribe results to user
-     * @param {Object} results - Results object with success, failed, needsFilter arrays
+     * Show unsubscribe and delete results to user
+     * @param {Object} results - Results object with success, failed, needsFilter, deleted arrays
+     * @param {boolean} deleteEmails - Whether emails were deleted
      */
-    showUnsubscribeResults(results) {
+    showUnsubscribeResults(results, deleteEmails = false) {
         const total = results.success.length + results.failed.length + results.needsFilter.length;
         let message = `Processed ${total} sender${total !== 1 ? 's' : ''}:\n\n`;
         
@@ -362,6 +356,20 @@ export class UIController {
                 message += `\n   (${verified} verified, ${unverified} pending verification)`;
             }
             message += '\n';
+        }
+        
+        if (deleteEmails && results.deleted && results.deleted.length > 0) {
+            const totalDeleted = results.deleted.reduce((sum, d) => sum + d.count, 0);
+            message += `🗑️ Moved ${totalDeleted} email${totalDeleted !== 1 ? 's' : ''} to trash from ${results.deleted.length} sender${results.deleted.length !== 1 ? 's' : ''}\n`;
+            
+            // Show details for first few
+            const detailsToShow = results.deleted.slice(0, 3);
+            detailsToShow.forEach(d => {
+                message += `   • ${d.domain}: ${d.count} email${d.count !== 1 ? 's' : ''}\n`;
+            });
+            if (results.deleted.length > 3) {
+                message += `   • ...and ${results.deleted.length - 3} more\n`;
+            }
         }
         
         if (results.failed.length > 0) {
@@ -381,7 +389,7 @@ export class UIController {
             message += `⚠ ${results.needsFilter.length} sender${results.needsFilter.length !== 1 ? 's' : ''} need${results.needsFilter.length === 1 ? 's' : ''} filter creation\n`;
         }
         
-        if (results.success.length > 0) {
+        if (results.success.length > 0 || (deleteEmails && results.deleted && results.deleted.length > 0)) {
             this.showSuccess(message);
         } else if (results.failed.length > 0 || results.needsFilter.length > 0) {
             this.showError(message);
@@ -394,7 +402,7 @@ export class UIController {
             }
             // Refresh email list to reflect changes
             this.renderEmailList();
-        }, results.success.length > 0 ? 2000 : 3000);
+        }, results.success.length > 0 || (deleteEmails && results.deleted && results.deleted.length > 0) ? 2500 : 3000);
     }
 
     /**
@@ -427,17 +435,12 @@ export class UIController {
         }
     }
 
-    /**
-     * Update load more button visibility based on pagination state
-     */
     updateLoadMoreButton() {
         if (!this.domRefs.loadMoreBtn) return;
-        
-        if (this.emailRepository.getNextPageToken() && this.emailRepository.getEmails().length > 0) {
-            this.domRefs.loadMoreBtn.style.display = 'block';
-        } else {
-            this.domRefs.loadMoreBtn.style.display = 'none';
-        }
+        const hasMore = !!this.emailRepository.getNextPageToken();
+        const loading = this.emailRepository.isLoadingMore();
+        this.domRefs.loadMoreBtn.style.display = hasMore ? 'block' : 'none';
+        this.domRefs.loadMoreBtn.disabled = !!loading;
     }
 
     // UI feedback methods

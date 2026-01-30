@@ -90,5 +90,123 @@ export class GmailApiService {
         const data = await response.json();
         return this.parser.parseEmailData(data);
     }
+
+    /**
+ * Delete multiple emails by their IDs (permanent deletion)
+ * @param {Array<string>} emailIds - Array of email IDs to delete
+ * @returns {Promise<{success: Array<string>, failed: Array<{id: string, error: string}>}>}
+ */
+async deleteEmails(emailIds) {
+    const token = await getAuthToken();
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const results = {
+        success: [],
+        failed: []
+    };
+
+    // Delete emails in batches to avoid rate limiting
+    const batchSize = 5;
+    for (let i = 0; i < emailIds.length; i += batchSize) {
+        const batch = emailIds.slice(i, i + batchSize);
+        
+        const deleteBatch = batch.map(async (emailId) => {
+            try {
+                const response = await fetch(
+                    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${emailId}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+                if (response.ok || response.status === 204) {
+                    results.success.push(emailId);
+                } else {
+                    results.failed.push({
+                        id: emailId,
+                        error: `HTTP ${response.status}`
+                    });
+                }
+            } catch (error) {
+                results.failed.push({
+                    id: emailId,
+                    error: error.message
+                });
+            }
+        });
+        await Promise.all(deleteBatch);
+
+        if (i + batchSize < emailIds.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+
+    return results;
+}
+
+/**
+ * Trash multiple emails by their IDs (moves to trash - recoverable)
+ * @param {Array<string>} emailIds - Array of email IDs to trash
+ * @returns {Promise<{success: Array<string>, failed: Array<{id: string, error: string}>}>}
+ */
+async trashEmails(emailIds) {
+    const token = await getAuthToken();
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const results = {
+        success: [],
+        failed: []
+    };
+
+    // Trash emails in batches
+    const batchSize = 5;
+    for (let i = 0; i < emailIds.length; i += batchSize) {
+        const batch = emailIds.slice(i, i + batchSize);
+        
+        const trashBatch = batch.map(async (emailId) => {
+            try {
+                const response = await fetch(
+                    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${emailId}/trash`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+                if (response.ok) {
+                    results.success.push(emailId);
+                } else {
+                    const status = response.status;
+                    const body = await response.text().catch(() => '');
+                    results.failed.push({
+                        id: emailId,
+                        error: `HTTP ${status}`,
+                        status,
+                        body: body ? body.slice(0, 200) : ''
+                    });
+                }
+            } catch (error) {
+                results.failed.push({
+                    id: emailId,
+                    error: error.message
+                });
+            }
+        });
+        await Promise.all(trashBatch);
+
+        if (i + batchSize < emailIds.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+
+    return results;
+}
 }
 

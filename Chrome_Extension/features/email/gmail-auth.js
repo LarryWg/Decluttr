@@ -47,15 +47,14 @@ async function getAuthToken() {
         console.log('OAuth Redirect URI:', redirectUri);
         console.log('Make sure this URI is added to your Google Cloud Console OAuth client');
 
-        // Build OAuth URL for Gmail API
-        // Add prompt=select_account to allow users to choose which Google account to use
-        const scope = 'https://www.googleapis.com/auth/gmail.readonly';
+        const scopes = manifest?.oauth2?.scopes || ['https://www.googleapis.com/auth/gmail.readonly'];
+        const scope = Array.isArray(scopes) ? scopes.join(' ') : scopes;
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
           `client_id=${encodeURIComponent(clientId)}&` +
           `response_type=token&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
           `scope=${encodeURIComponent(scope)}&` +
-          `prompt=select_account`;
+          `prompt=consent%20select_account`;
 
         // Launch OAuth flow
         chrome.identity.launchWebAuthFlow(

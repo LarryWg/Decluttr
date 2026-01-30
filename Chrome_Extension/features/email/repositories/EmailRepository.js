@@ -10,7 +10,7 @@ export class EmailRepository {
         this.emailCache = new Map(); // Cache AI results per email ID
         this.selectedInbox = DEFAULT_INBOX;
         this.nextPageToken = null; // For pagination
-        this.isLoadingMore = false; // Track if we're loading more emails
+        this._loadingMore = false;
         this.unsubscribedSenders = new Set(); // Track unsubscribed sender domains
     }
 
@@ -70,13 +70,12 @@ export class EmailRepository {
         this.nextPageToken = token;
     }
 
-    // Loading state
     isLoadingMore() {
-        return this.isLoadingMore;
+        return this._loadingMore;
     }
 
     setLoadingMore(loading) {
-        this.isLoadingMore = loading;
+        this._loadingMore = loading;
     }
 
     // Processing state
