@@ -1,142 +1,106 @@
 # Decluttr
 
-Chrome Extension for email management, AI summaries, and productivity tools.
+Chrome extension for email management, AI summaries, and productivity tools.
 
 ## Features
 
-- **Email Assistant**: Gmail integration with AI-powered email summaries, categorization, and unsubscribe detection
-- **Focus Mode**: Face detection and focus tracking (existing)
+- **Email Assistant**: Gmail integration with AI-powered summaries, categorization (Primary / Promotions), unsubscribe detection, and Manage Promotions (unsubscribe in Gmail or move to trash)
+- **Focus Mode**: Face detection and focus tracking
 - **LinkedIn Tools**: (placeholder for future features)
 
 ## Setup
 
-### Backend Setup
+### Backend
 
-1. Navigate to the backend directory:
-```bash
-cd backend
-```
+1. Go to the backend directory:
+   ```bash
+   cd Chrome_Extension/backend
+   ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+2. Install dependencies and configure:
+   ```bash
+   npm install
+   cp .env.example .env
+   ```
+   Set `OPENAI_API_KEY` in `.env` (required for AI summaries).
 
-5. Start the backend server:
-```bash
-npm start
-```
+3. Start the server:
+   ```bash
+   npm start
+   ```
+   Default: `http://localhost:3000`. See [Chrome_Extension/backend/README.md](Chrome_Extension/backend/README.md) for API details.
 
-The backend will run on `http://localhost:3000` (or your configured PORT).
+### Chrome Extension
 
-See [backend/README.md](backend/README.md) for detailed backend API documentation.
+1. **Google Cloud: Gmail API and OAuth**
+   - In [Google Cloud Console](https://console.cloud.google.com/): create or select a project.
+   - Enable **Gmail API** (APIs & Services → Library → search “Gmail API” → Enable).
+   - Create **OAuth 2.0 Client ID**: APIs & Services → Credentials → Create Credentials → OAuth client ID.
+   - Application type: **Chrome app** (or **Web application**). For Chrome app, enter your extension ID (see step 3).
+   - **Authorized redirect URIs**: After loading the extension once, open the extension → Settings → Developer options → copy the **Redirect URI**. Add that exact URI to your OAuth client’s “Authorized redirect URIs”. If you have multiple OAuth clients (e.g. for different testers), add the same URI to each client.
+   - Copy the **Client ID** and put it in `Chrome_Extension/manifest.json` under `oauth2.client_id`.
 
-### Chrome Extension Setup
+2. **Load the extension**
+   - Chrome → `chrome://extensions/` → turn on **Developer mode** → **Load unpacked** → select the `Chrome_Extension` folder.
+   - The extension uses a fixed `key` in the manifest so the extension ID (and redirect URI) stay the same across reloads. Use the redirect URI shown in Settings → Developer options when configuring OAuth.
 
-1. **Configure OAuth Client ID for Gmail API**:
+3. **Optional: Backend URL**
+   - Extension → Settings (gear) → Developer options → set **Backend URL** if your backend is not at `http://localhost:3000` → Save.
 
-   a. **Enable Gmail API in Google Cloud Console:**
-      - Go to [Google Cloud Console](https://console.cloud.google.com/)
-      - Create a new project or select an existing one
-      - Navigate to "APIs & Services" > "Library"
-      - Search for "Gmail API" and click "Enable"
-   
-   b. **Create OAuth 2.0 credentials:**
-      - Go to "APIs & Services" > "Credentials"
-      - Click "Create Credentials" > "OAuth client ID"
-      - **Choose "Desktop app" as the application type** (or "Web application")
-      - **No redirect URI needed** - Chrome extensions handle this automatically
-      - Click "Create"
-      - Copy the generated Client ID (looks like: `123456789-abcdefg.apps.googleusercontent.com`)
-   
-   c. **Update manifest.json:**
-      - Open `Chrome_Extension/manifest.json`
-      - Find the `oauth2.client_id` field
-      - Replace the placeholder with your actual Client ID from step b
-      - **Reload the extension** in `chrome://extensions/` after making this change
-
-2. **Load the Extension**:
-
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in top right)
-   - Click "Load unpacked"
-   - Select the `Chrome_Extension` directory
-
-3. **Configure Settings** (Optional):
-
-   - Click the Decluttr extension icon in Chrome toolbar
-   - Click "Email Assistant"
-   - Click the settings (⚙️) button
-   - Optionally update the backend URL if running on a different port/host
-   - Click "Save"
-   
-
-4. **Connect Gmail**:
-
-   - Click "Connect Gmail" button
-   - Authorize the extension to access your Gmail (read-only)
-   - Your emails will be fetched and displayed
+4. **Connect Gmail**
+   - Open the extension → Email Assistant → **Connect Gmail** → sign in and allow access. Testers do not need to configure OAuth; only the person who set up the OAuth client(s) needs to add the redirect URI once.
 
 ## Usage
 
 ### Email Assistant
 
-1. Click the Decluttr extension icon
-2. Click "Email Assistant"
-3. Your Gmail inbox emails will be displayed (latest 20 emails)
-4. Click "Process with AI" on any email to get:
-   - AI-generated summary
-   - Category classification (Work, Personal, Promotional, Spam, Newsletter, Other)
-   - Unsubscribe link detection
-5. Click "View Details" to see full email content and AI analysis
-6. Click "Refresh" to fetch latest emails
+1. Open the Decluttr icon → **Email Assistant**.
+2. Use **Primary** and **Promotions** tabs to filter by Gmail category.
+3. **Load More** fetches the next page of emails (batch size is configurable).
+4. **Process with AI** on an email: summary, category, and unsubscribe detection.
+5. **View Details** opens the full email and AI analysis.
+6. **Manage Promotions** (when on Promotions): select senders, then **Open in Gmail** (use Gmail’s Unsubscribe) and/or **Unsubscribe & optionally trash** (extension attempt + optional move to trash).
+7. **Refresh** reloads the inbox.
+
+### Settings
+
+- **Account**: Log out from Gmail.
+- **Appearance**: Theme (Light / Dark / System).
+- **Behavior**: Auto-categorize emails on load (toggle).
+- **Developer options** (collapsed): Backend URL, Redirect URI (for OAuth setup). Copy the Redirect URI and add it to your OAuth client(s) in Google Cloud Console so Connect Gmail works.
 
 ## Development
 
-### Backend API Endpoints
+### API (backend)
 
-- `POST /api/email/summarize` - Generate AI summary, category, and unsubscribe detection
-- `POST /api/email/categorize` - Categorize an email
-- `POST /api/email/detect-unsubscribe` - Detect unsubscribe links
-- `GET /health` - Health check
+- `POST /api/email/summarize` – AI summary, category, unsubscribe detection
+- `POST /api/email/categorize` – Categorize email
+- `POST /api/email/detect-unsubscribe` – Detect unsubscribe links
+- `GET /health` – Health check
 
-See [backend/README.md](backend/README.md) for detailed API documentation.
+See [Chrome_Extension/backend/README.md](Chrome_Extension/backend/README.md) for request/response formats.
 
-### File Structure
+### Extension structure
 
 ```
-Decluttr/
-├── Chrome_Extension/
-│   ├── features/
-│   │   └── email/          # Email Assistant feature
-│   │       ├── email.html  # Email UI
-│   │       ├── email.css   # Email styles
-│   │       ├── email.js    # Email logic & Gmail API
-│   │       └── gmail-auth.js # OAuth authentication
-│   ├── popup/              # Main popup
-│   └── manifest.json       # Extension manifest
-└── backend/                # Backend API server
-    ├── server.js           # Express server
-    ├── routes/             # API routes
-    └── utils/              # Utility functions
+Chrome_Extension/
+├── features/
+│   ├── email/           # Email Assistant
+│   │   ├── config/      # Constants
+│   │   ├── controllers/ # EventController, UIController
+│   │   ├── repositories/# EmailRepository
+│   │   ├── services/    # GmailApi, BackendApi, Settings, Unsubscribe, etc.
+│   │   ├── utils/
+│   │   ├── email.html, email.css, email.js
+│   │   └── gmail-auth.js
+│   ├── focus/           # Focus mode
+│   └── linkedin/
+├── popup/               # Main popup (App.html, App.js)
+└── manifest.json
 ```
 
+## Troubleshooting
 
-
-### Backend Connection Issues
-
-- Ensure the backend server is running (`npm start` in backend directory)
-- Check that the backend URL in extension settings matches your server URL
-- Verify CORS setting in backend allow request  s from extension
-
-### Gmail Authentication Issues
-
-- Verify OAuth Client ID is correctly configured in `manifest.json`
-- Check that Gmail API is enabled in Google Cloud Console
-- Ensure the extension has proper permissions in Chrome
-
-### AI Processing Errors
-
-- Verify OpenAI API key is valid and has credits
-- Check backend server logs for detailed error messages
-- Ensure email content is not empty or malformed
+- **Backend**: Ensure the backend is running and the Backend URL in Settings → Developer options is correct. CORS must allow the extension origin.
+- **Gmail / OAuth**: If you see “redirect_uri_mismatch” or “Access blocked: This app’s request is invalid”, add the **exact** Redirect URI from Settings → Developer options to your OAuth client’s Authorized redirect URIs in Google Cloud Console. If you use multiple OAuth clients, add the same URI to each.
+- **AI errors**: Check `OPENAI_API_KEY` in backend `.env` and backend logs for details.
