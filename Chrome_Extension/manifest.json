@@ -1,30 +1,42 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo3VK098ObDcK2n0r7DTQjT1qWPtQ65k2xKcdEak/7y2qc0K9pSrW1xqpm7V8cMpW5xThFFpA/d2CRaj4V0uvGx0SlTrriqatI8fZImhAhPc2N9lqbVH5VvVI+XxNN7xKN6mj2n1s9J0ehuevcp6S5ovzz/SM/0DF+cgkC36zJ7/J4QVjn1n8B730yER9fvRHG9c3B8SSy6NAR3s5rtJU3aUQncl0V+c1WCy+XyVsQhi6/1vWtQxreyWgWd0eTCrnQnVAgFCEjSKuBW3ub1siHlVj+4zJ2NWVZ8NlXtIlu/oOrx0P+++wL458j/9A7U6fep3eGMxtgbUv65UJsr407QIDAQAB",
   "name": "Decluttr",
   "version": "1.0.0",
   "description": "Email cleanup, AI summaries, focus mode & productivity tools.",
   "permissions": [
-    "activeTab", 
     "storage", 
     "scripting",
+    "offscreen",
+    "tabs",
+    "activeTab",
     "identity"
   ],
   "host_permissions": [
-    "https://www.googleapis.com/*",
-    "https://accounts.google.com/*",
-    "http://localhost:*/*"
+    "<all_urls>"
   ],
   "oauth2": {
-    "client_id": "569838728280-qtuppin3qsgl364tc1s106aql0n5q07v.apps.googleusercontent.com",
+    "client_id": "569838728280-d7up9kbkamamsr87gj4ssld1p2jppc2k.apps.googleusercontent.com",
     "scopes": [
-      "https://www.googleapis.com/auth/gmail.readonly"
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify"
     ]
   },
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup/App.html",
     "default_title": "Decluttr"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["features/focus/focus.css"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
 }

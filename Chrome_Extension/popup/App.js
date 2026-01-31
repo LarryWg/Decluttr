@@ -8,5 +8,5 @@ document.getElementById("linkedinBtn").addEventListener("click", () => {
 });
 
 document.getElementById("focusBtn").addEventListener("click", () => {
-    window.location.href = "../features/focus/focus.html";
+    window.location.href = "../features/focus/offscreen.html";
 });

@@ -70,32 +70,22 @@ function checkFocus(landmarks) {
     const leftEye = landmarks[33];
     const rightEye = landmarks[263];
 
-    // Horizontal Tracking
     const midPointX = (leftEye.x + rightEye.x) / 2;
     const horizontalDiff = Math.abs(nose.x - midPointX);
-
-    // Vertical Tracking
     const midPointY = (leftEye.y + rightEye.y) / 2;
     const verticalDiff = nose.y - midPointY;
 
-    // Thresholds
-    const isLookingSide = horizontalDiff > 0.035;
-    const isLookingUp = verticalDiff < 0.01; 
-    const isLookingDown = verticalDiff > 0.14;
-
-    const isLookingAway = isLookingSide || isLookingUp || isLookingDown;
+    const isLookingAway = horizontalDiff > 0.035 || verticalDiff < 0.01 || verticalDiff > 0.14;
 
     if (isLookingAway) {
         if (!lookAwayStartTime) lookAwayStartTime = Date.now();
-        
         if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
-            // Trigger the pulsing CSS class
-            document.body.classList.add('alert-active');
+            // Signal background.js to pulse the active tab
+            chrome.runtime.sendMessage({type: 'ALARM_STATE', active: true});
         }
     } else {
-        // Stop the alert and reset timers immediately
         lookAwayStartTime = null;
-        document.body.classList.remove('alert-active');
+        chrome.runtime.sendMessage({type: 'ALARM_STATE', active: false});
     }
 }
 
