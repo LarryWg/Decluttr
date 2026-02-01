@@ -5,15 +5,15 @@
   "version": "1.0.0",
   "description": "Email cleanup, AI summaries, focus mode & productivity tools.",
   "permissions": [
-    "activeTab", 
     "storage", 
     "scripting",
+    "offscreen",
+    "tabs",
+    "activeTab",
     "identity"
   ],
   "host_permissions": [
-    "https://www.googleapis.com/*",
-    "https://accounts.google.com/*",
-    "http://localhost:*/*"
+    "<all_urls>"
   ],
   "oauth2": {
     "client_id": "569838728280-d7up9kbkamamsr87gj4ssld1p2jppc2k.apps.googleusercontent.com",
@@ -22,11 +22,21 @@
       "https://www.googleapis.com/auth/gmail.modify"
     ]
   },
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  "background": {
+    "service_worker": "features/focus/background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup/App.html",
     "default_title": "Decluttr"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["features/focus/distraction-overlay.css"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
 }

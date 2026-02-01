@@ -1,3 +1,6 @@
+// Start background tracking when main UI opens (user not in Focus)
+chrome.runtime.sendMessage({ type: 'FOCUS_UI_CLOSED' });
+
 // Buttons open feature pages (no emojis, simple style)
 document.getElementById("emailBtn").addEventListener("click", () => {
     window.location.href = "../features/email/email.html";

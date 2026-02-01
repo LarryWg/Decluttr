@@ -8,37 +8,65 @@ const video = document.getElementById('camera-feed');
 const canvas = document.getElementById('overlay');
 const backBtn = document.getElementById("backBtn");
 const toggleCamBtn = document.getElementById('toggleCamBtn');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const videoPlaceholder = document.getElementById('videoPlaceholder');
 
 // --- Global Variables ---
 let faceLandmarker;        
 let lastVideoTime = -1;    
 let lookAwayStartTime = null; 
+let cameraStarted = false;
 const LOOK_AWAY_THRESHOLD = 2000; // 2 seconds
 
-// --- Event Listeners ---
+function setStatus(state) {
+    if (!statusDot || !statusText) return;
+    statusDot.className = 'status-dot status-' + state;
+    statusText.textContent = state === 'focused' ? 'Focused' : state === 'distracted' ? 'Look at screen!' : state === 'tracking' ? 'Watching' : 'Ready';
+}
 
+// Tell background to free camera for Focus UI (close offscreen)
+chrome.runtime.sendMessage({ type: 'FOCUS_UI_OPEN' });
+
+// --- Event Listeners ---
 backBtn.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: 'FOCUS_UI_CLOSED' });
     window.location.href = "../../popup/App.html";
 });
 
-toggleCamBtn.addEventListener('click', () => {
+window.addEventListener('beforeunload', () => {
+    chrome.runtime.sendMessage({ type: 'FOCUS_UI_CLOSED' });
+});
+
+toggleCamBtn.addEventListener('click', async () => {
     if (video.classList.contains('video-hidden')) {
-        // SHOWING CAMERA
         video.classList.remove('video-hidden');
         video.classList.add('video-visible');
-        toggleCamBtn.textContent = 'Hide Camera';
-        toggleCamBtn.classList.add('active-btn');
+        if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
+        toggleCamBtn.querySelector('.btn-label').textContent = 'Hide Camera';
+        toggleCamBtn.querySelector('.btn-icon').textContent = '■';
+        toggleCamBtn.classList.add('active');
+        if (!cameraStarted) {
+            toggleCamBtn.disabled = true;
+            toggleCamBtn.querySelector('.btn-label').textContent = 'Starting...';
+            await startCamera();
+            cameraStarted = true;
+            toggleCamBtn.querySelector('.btn-label').textContent = 'Hide Camera';
+            toggleCamBtn.disabled = false;
+            setStatus('tracking');
+        }
     } else {
-        // HIDING CAMERA
         video.classList.remove('video-visible');
         video.classList.add('video-hidden');
-        toggleCamBtn.textContent = 'Show Camera';
-        toggleCamBtn.classList.remove('active-btn');
+        if (videoPlaceholder) videoPlaceholder.classList.remove('hidden');
+        toggleCamBtn.querySelector('.btn-label').textContent = 'Show Camera';
+        toggleCamBtn.querySelector('.btn-icon').textContent = '▶';
+        toggleCamBtn.classList.remove('active');
+        setStatus('ready');
     }
 });
 
 // --- MediaPipe Initialization ---
-
 async function initMediaPipe() {
     try {
         if (!window.FilesetResolver || !window.FaceLandmarker) {
@@ -57,7 +85,7 @@ async function initMediaPipe() {
         });
 
         console.log("Eye Tracking Initialized");
-        startCamera();
+        // Camera starts when user clicks "Show Camera" so video has proper dimensions
     } catch (err) {
         console.error("Initialization error:", err);
     }
@@ -91,13 +119,15 @@ function checkFocus(landmarks) {
         if (!lookAwayStartTime) lookAwayStartTime = Date.now();
         
         if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
-            // Trigger the pulsing CSS class
             document.body.classList.add('alert-active');
+            setStatus('distracted');
+        } else {
+            setStatus('tracking'); // Looking away but under threshold
         }
     } else {
-        // Stop the alert and reset timers immediately
         lookAwayStartTime = null;
         document.body.classList.remove('alert-active');
+        setStatus('focused');
     }
 }
 
@@ -149,10 +179,26 @@ async function startCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
         video.onloadedmetadata = () => {
+            video.play().catch(() => {});
             renderLoop();
         };
     } catch (err) {
-        console.error("Camera error:", err);
+        const msg = err?.name === 'NotAllowedError' ? 'Camera permission denied'
+            : err?.name === 'NotFoundError' ? 'No camera found'
+            : err?.name === 'NotReadableError' ? 'Camera in use elsewhere'
+            : err?.message || String(err);
+        console.error("Camera error:", err?.name, msg);
+        cameraStarted = false;
+        video.classList.add('video-hidden');
+        video.classList.remove('video-visible');
+        if (videoPlaceholder) videoPlaceholder.classList.remove('hidden');
+        if (toggleCamBtn) {
+            toggleCamBtn.querySelector('.btn-label').textContent = 'Show Camera';
+            toggleCamBtn.querySelector('.btn-icon').textContent = '▶';
+            toggleCamBtn.classList.remove('active');
+            toggleCamBtn.disabled = false;
+        }
+        setStatus('ready');
     }
 }
 

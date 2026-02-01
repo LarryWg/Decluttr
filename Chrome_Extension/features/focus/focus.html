@@ -7,19 +7,34 @@
     <link rel="stylesheet" href="focus.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <button class="backButton" id="backBtn">← Back</button>
-            <h2>Focus Mode</h2>
-        </div>
+    <div class="focus-container">
+        <header class="focus-header">
+            <button class="focus-back-btn" id="backBtn">← Back</button>
+            <h1 class="focus-title">Focus Mode</h1>
+            <div class="focus-status" id="statusIndicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">Ready</span>
+            </div>
+        </header>
 
-        <button id="toggleCamBtn" class="subButton">Show Camera</button>
+        <main class="focus-main">
+            <p class="focus-description">Eye tracking keeps you accountable. Look away for 2+ seconds to get a nudge.</p>
+            
+            <button id="toggleCamBtn" class="focus-toggle-btn">
+                <span class="btn-icon">▶</span>
+                <span class="btn-label">Show Camera</span>
+            </button>
 
-        <div class="video-wrapper">
-            <video id="camera-feed" class="video-hidden" autoplay playsinline></video>
-            <canvas id="overlay"></canvas>
-        </div>
-    </div> 
+            <div class="video-container">
+                <video id="camera-feed" class="video-hidden" autoplay playsinline></video>
+                <canvas id="overlay"></canvas>
+                <div class="video-placeholder" id="videoPlaceholder">
+                    <span class="placeholder-icon">👁</span>
+                    <span>Camera hidden</span>
+                </div>
+            </div>
+        </main>
+    </div>
     
     <script src="video.js" type="module"></script>
     <script src="focus.js" type="module"></script>
