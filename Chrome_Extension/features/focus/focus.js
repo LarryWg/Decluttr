@@ -2,6 +2,8 @@
  * focus.js
  * Real-time eye tracking with instant color feedback.
  */
+import { initTheme } from '../../utils/theme.js';
+initTheme();
 
 // --- Element References ---
 const video = document.getElementById('camera-feed');

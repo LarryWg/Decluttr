@@ -2,6 +2,7 @@
  * Email Assistant - Main Controller
  * Orchestrates all services and controllers
  */
+import { initTheme } from '../../utils/theme.js';
 import { DOMReferences } from './utils/domUtils.js';
 import { EmailRepository } from './repositories/EmailRepository.js';
 import { GmailApiService } from './services/GmailApiService.js';
@@ -59,7 +60,7 @@ class EmailController {
      */
     async init() {
         await this.settingsService.loadSettings();
-        await this.applyTheme();
+        await initTheme();
         await this.emailRepository.loadUnsubscribedSenders();
         await this.emailRepository.loadJobLabelId();
         this.eventController.setupEventListeners();
@@ -67,15 +68,6 @@ class EmailController {
             this.uiController.updateInboxTabsUI();
         }
         await this.checkAuthAndInit();
-    }
-
-    async applyTheme() {
-        const theme = await this.settingsService.getTheme();
-        let resolved = theme;
-        if (theme === 'system') {
-            resolved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        document.documentElement.setAttribute('data-theme', resolved);
     }
 
     /**

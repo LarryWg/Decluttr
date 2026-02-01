@@ -1,3 +1,5 @@
+import { setTheme } from '../../../utils/theme.js';
+
 /**
  * Event Controller - Handles all event listeners setup
  */
@@ -26,9 +28,7 @@ export class EventController {
 
         if (this.domRefs.themeSelect) {
             this.domRefs.themeSelect.addEventListener('change', async () => {
-                const theme = this.domRefs.themeSelect.value;
-                await this.settingsService.setTheme(theme);
-                await this.emailController.applyTheme();
+                await setTheme(this.domRefs.themeSelect.value);
             });
         }
 

@@ -1,18 +1,4 @@
-:root {
-    --settings-bg: #ffffff;
-    --settings-border: #e5e7eb;
-    --settings-text: #111827;
-    --settings-text-muted: #6b7280;
-    --settings-input-bg: #f9fafb;
-}
-
-html[data-theme="dark"] {
-    --settings-bg: #1f2937;
-    --settings-border: #374151;
-    --settings-text: #f9fafb;
-    --settings-text-muted: #9ca3af;
-    --settings-input-bg: #111827;
-}
+/* Theme vars from utils/theme.css */
 
 html, body {
     min-width: 360px;
@@ -20,7 +6,8 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ffffff 100%);
+    background: var(--decluttr-bg);
+    color: var(--decluttr-text);
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -28,11 +15,6 @@ html, body {
     position: relative;
 }
 
-html[data-theme="dark"] body {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1f2937 100%);
-}
-
-/* Animated background */
 html::before {
     content: '';
     position: fixed;
@@ -40,10 +22,13 @@ html::before {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(45deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.15) 100%);
+    background: linear-gradient(45deg, rgba(255,255,255,0.06) 0%, transparent 50%, rgba(255,255,255,0.04) 100%);
     animation: shimmer 8s infinite;
     pointer-events: none;
     z-index: 0;
+}
+html[data-theme="light"]::before {
+    background: linear-gradient(45deg, rgba(0,0,0,0.02) 0%, transparent 50%, rgba(0,0,0,0.03) 100%);
 }
 
 @keyframes shimmer {
@@ -55,12 +40,12 @@ html::before {
     width: 350px;
     max-height: 600px;
     padding: 24px;
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--decluttr-card-bg);
     backdrop-filter: blur(15px) saturate(180%);
     -webkit-backdrop-filter: blur(15px) saturate(180%);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 32px 0 rgba(102, 126, 234, 0.3);
+    border: 1px solid var(--decluttr-card-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     text-align: left;
     overflow-y: auto;
     position: relative;
@@ -74,13 +59,13 @@ html::before {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid var(--decluttr-surface-border);
 }
 
 .header h2 {
     margin: 0;
     font-size: 20px;
-    color: rgba(255, 255, 255, 0.98);
+    color: var(--decluttr-text);
     flex: 1;
     text-align: center;
     font-weight: 600;
@@ -93,24 +78,23 @@ html::before {
     padding: 12px 20px;
     font-size: 14px;
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.35);
+    background: var(--decluttr-surface);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    color: #4f46e5;
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: var(--decluttr-text);
+    border: 1px solid var(--decluttr-surface-border);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.25);
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .button:hover {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(255, 255, 255, 0.7);
+    background: var(--decluttr-input-bg);
+    border-color: var(--decluttr-accent);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.35);
-    color: #4338ca;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    color: var(--decluttr-accent-hover);
 }
 
 .button:active {
@@ -130,43 +114,42 @@ html::before {
 }
 
 .backButton {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--decluttr-input-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    color: #4f46e5;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: var(--decluttr-text);
+    border: 1px solid var(--decluttr-surface-border);
     padding: 10px 16px;
     border-radius: 12px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .backButton:hover {
-    background: rgba(255, 255, 255, 0.4);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: var(--decluttr-surface);
+    border-color: var(--decluttr-accent);
     transform: translateY(-2px);
-    color: #4338ca;
+    color: var(--decluttr-accent-hover);
 }
 
 .settingsButton {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--decluttr-input-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--decluttr-surface-border);
     font-size: 18px;
     cursor: pointer;
     padding: 8px 12px;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--decluttr-text);
     border-radius: 10px;
     transition: all 0.3s ease;
 }
 
 .settingsButton:hover {
-    background: rgba(255, 255, 255, 0.35);
-    color: rgba(255, 255, 255, 1);
+    background: var(--decluttr-surface);
     transform: rotate(90deg);
 }
 
@@ -362,14 +345,14 @@ html::before {
 }
 
 .authSection p {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--decluttr-text);
     margin-bottom: 15px;
     font-size: 15px;
 }
 
 .infoText {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--decluttr-text-muted);
     margin-top: 10px;
 }
 
@@ -380,8 +363,8 @@ html::before {
 }
 
 .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid rgba(255, 255, 255, 0.9);
+    border: 4px solid var(--decluttr-surface-border);
+    border-top: 4px solid var(--decluttr-accent);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -395,36 +378,36 @@ html::before {
 }
 
 .loadingSpinner p {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--decluttr-text);
     font-size: 14px;
 }
 
 /* Messages */
 .errorMessage {
-    background: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.25);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    color: rgba(255, 255, 255, 0.98);
+    color: var(--decluttr-text);
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 15px;
     font-size: 13px;
     border: 1px solid rgba(239, 68, 68, 0.4);
-    box-shadow: 0 4px 15px 0 rgba(239, 68, 68, 0.25);
 }
+html[data-theme="dark"] .errorMessage { color: #fecaca; }
 
 .successMessage {
-    background: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.25);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    color: rgba(255, 255, 255, 0.98);
+    color: var(--decluttr-text);
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 15px;
     font-size: 13px;
     border: 1px solid rgba(34, 197, 94, 0.4);
-    box-shadow: 0 4px 15px 0 rgba(34, 197, 94, 0.25);
 }
+html[data-theme="dark"] .successMessage { color: #bbf7d0; }
 
 /* Email List Section */
 .emailListSection {
@@ -436,14 +419,14 @@ html::before {
     display: flex;
     gap: 8px;
     margin-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid var(--decluttr-surface-border);
     padding-bottom: 8px;
 }
 
 .inboxTab {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--decluttr-text-muted);
     padding: 8px 16px;
     cursor: pointer;
     border-radius: 8px 8px 0 0;
@@ -453,14 +436,14 @@ html::before {
 }
 
 .inboxTab:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
+    background: var(--decluttr-input-bg);
+    color: var(--decluttr-text);
 }
 
 .inboxTab.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 1);
-    border-bottom: 2px solid #4f46e5;
+    background: var(--decluttr-surface);
+    color: var(--decluttr-text);
+    border-bottom: 2px solid var(--decluttr-accent);
 }
 
 .emailListHeader {
@@ -469,12 +452,12 @@ html::before {
     align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid var(--decluttr-surface-border);
 }
 
 .accountEmail {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.7);
+    color: var(--decluttr-text-muted);
     font-weight: 500;
 }
 
@@ -483,30 +466,30 @@ html::before {
     overflow-y: auto;
 }
 
-/* Email Card - Glass style */
+/* Email Card - theme-aware */
 .emailCard {
-    background: rgba(255, 255, 255, 0.35);
+    background: var(--decluttr-surface);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--decluttr-surface-border);
     border-radius: 16px;
     padding: 16px;
     margin-bottom: 12px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .emailCard:hover {
-    background: rgba(255, 255, 255, 0.45);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: var(--decluttr-input-bg);
+    border-color: var(--decluttr-accent);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .emailCard.expanded {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(255, 255, 255, 0.7);
+    background: var(--decluttr-input-bg);
+    border-color: var(--decluttr-accent);
 }
 
 .emailCardHeader {
@@ -519,25 +502,24 @@ html::before {
 .emailSubject {
     font-weight: 700;
     font-size: 15px;
-    color: rgba(0, 0, 0, 0.9);
+    color: var(--decluttr-text);
     flex: 1;
     margin-right: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .emailDate {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.7);
+    color: var(--decluttr-text-muted);
     white-space: nowrap;
     font-weight: 500;
 }
 
 .emailSender {
     font-size: 13px;
-    color: rgba(0, 0, 0, 0.85);
+    color: var(--decluttr-text);
     margin-bottom: 8px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -547,7 +529,7 @@ html::before {
 
 .emailPreview {
     font-size: 13px;
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--decluttr-text-muted);
     margin-bottom: 8px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -567,7 +549,7 @@ html::before {
     align-items: center;
 }
 
-/* Category Badge - Glass style */
+/* Category Badge - theme-aware for contrast */
 .categoryBadge {
     display: inline-block;
     padding: 6px 12px;
@@ -577,49 +559,61 @@ html::before {
     flex-shrink: 0;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme="dark"] .categoryBadge {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+html[data-theme="light"] .categoryBadge {
+    border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .categoryBadge.personal {
-    background: rgba(34, 197, 94, 0.4);
-    color: rgba(255, 255, 255, 0.98);
+    background: rgba(34, 197, 94, 0.35);
 }
+html[data-theme="dark"] .categoryBadge.personal { color: #bbf7d0; }
+html[data-theme="light"] .categoryBadge.personal { color: #166534; }
 
 .categoryBadge.promotional {
-    background: rgba(255, 193, 7, 0.4);
-    color: rgba(255, 255, 255, 0.98);
+    background: rgba(255, 193, 7, 0.35);
 }
+html[data-theme="dark"] .categoryBadge.promotional { color: #fef08a; }
+html[data-theme="light"] .categoryBadge.promotional { color: #854d0e; }
 
 .categoryBadge.spam {
-    background: rgba(239, 68, 68, 0.4);
-    color: rgba(255, 255, 255, 0.98);
+    background: rgba(239, 68, 68, 0.35);
 }
+html[data-theme="dark"] .categoryBadge.spam { color: #fecaca; }
+html[data-theme="light"] .categoryBadge.spam { color: #991b1b; }
 
 .categoryBadge.newsletter {
-    background: rgba(0, 188, 212, 0.4);
-    color: rgba(255, 255, 255, 0.98);
+    background: rgba(0, 188, 212, 0.35);
 }
+html[data-theme="dark"] .categoryBadge.newsletter { color: #a5f3fc; }
+html[data-theme="light"] .categoryBadge.newsletter { color: #155e75; }
 
 .categoryBadge.other {
-    background: rgba(158, 158, 158, 0.4);
-    color: rgba(255, 255, 255, 0.98);
+    background: rgba(148, 163, 184, 0.35);
 }
+html[data-theme="dark"] .categoryBadge.other { color: #e2e8f0; }
+html[data-theme="light"] .categoryBadge.other { color: #475569; }
 
-/* Job application label (like Unsubscribe Available) */
+/* Job application label */
 .jobApplicationBadge {
     display: inline-block;
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
-    background: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.35);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(99, 102, 241, 0.5);
-    color: rgba(255, 255, 255, 0.98);
     flex-shrink: 0;
 }
+html[data-theme="dark"] .jobApplicationBadge { color: #c7d2fe; }
+html[data-theme="light"] .jobApplicationBadge { color: #3730a3; }
 
 /* Unsubscribe Indicator */
 .unsubscribeBadge {
@@ -628,23 +622,24 @@ html::before {
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
-    background: rgba(255, 152, 0, 0.4);
+    background: rgba(255, 152, 0, 0.35);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 152, 0, 0.5);
-    color: rgba(255, 255, 255, 0.98);
     flex-shrink: 0;
 }
+html[data-theme="dark"] .unsubscribeBadge { color: #fed7aa; }
+html[data-theme="light"] .unsubscribeBadge { color: #9a3412; }
 
 .unsubscribeLink {
     display: block;
     margin-top: 8px;
     padding: 8px 16px;
-    background: rgba(255, 152, 0, 0.4);
+    background: rgba(255, 152, 0, 0.35);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 152, 0, 0.5);
-    color: rgba(255, 255, 255, 0.98);
+    color: var(--decluttr-text);
     text-decoration: none;
     border-radius: 12px;
     font-size: 12px;
@@ -663,32 +658,32 @@ html::before {
 .aiResults {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: 1px solid var(--decluttr-surface-border);
 }
 
 .aiResults h4 {
     font-size: 15px;
-    color: #1e1b4b;
+    color: var(--decluttr-text);
     margin: 0 0 12px 0;
     font-weight: 700;
 }
 
 .aiSummary {
-    background: rgba(239, 246, 255, 0.8);
+    background: var(--decluttr-input-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 14px;
     border-radius: 12px;
     margin-bottom: 10px;
     font-size: 13px;
-    color: #1f2937;
+    color: var(--decluttr-text);
     line-height: 1.7;
-    border: 1px solid rgba(102, 126, 234, 0.2);
+    border: 1px solid var(--decluttr-surface-border);
     font-weight: 400;
 }
 
 .aiSummary strong {
-    color: #4f46e5;
+    color: var(--decluttr-accent);
     font-weight: 600;
 }
 
@@ -696,7 +691,7 @@ html::before {
 .emptyState {
     text-align: center;
     padding: 40px 20px;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--decluttr-text-muted);
 }
 
 /* Unsubscribe Modal – light theme */
@@ -720,31 +715,31 @@ html::before {
 }
 
 .unsubscribeModal .unsubscribeModalContent {
-    background: #ffffff;
+    background: var(--settings-bg);
     border-radius: 16px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
     padding: 24px;
     max-width: 500px;
     width: 100%;
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--settings-border);
 }
 
 .unsubscribeModalHint {
     margin: 0 0 16px 0;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--settings-text-muted);
     line-height: 1.5;
 }
 
 .unsubscribeModalDeleteOption {
     margin-bottom: 16px;
     padding: 12px 14px;
-    background: #f9fafb;
+    background: var(--settings-input-bg);
     border-radius: 10px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--settings-border);
 }
 
 .unsubscribeModalDeleteLabel {
@@ -754,7 +749,7 @@ html::before {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    color: #111827;
+    color: var(--settings-text);
 }
 
 .unsubscribeModalDeleteCheckbox {
@@ -765,7 +760,7 @@ html::before {
 
 .unsubscribeModalDeleteHint {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--settings-text-muted);
     margin: 6px 0 0 28px;
 }
 
@@ -784,15 +779,15 @@ html::before {
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    background: #f9fafb;
+    background: var(--settings-input-bg);
     border-radius: 10px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--settings-border);
     cursor: pointer;
     transition: background 0.2s ease;
 }
 
 .unsubscribeModal .senderCheckboxLabel:hover {
-    background: #f3f4f6;
+    background: var(--decluttr-surface);
 }
 
 .unsubscribeModal .senderCheckboxLabel:has(input:disabled) {
@@ -816,13 +811,13 @@ html::before {
 
 .unsubscribeModal .senderDisplayName {
     font-weight: 600;
-    color: #111827;
+    color: var(--settings-text);
     margin-bottom: 4px;
 }
 
 .unsubscribeModal .senderMeta {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--settings-text-muted);
 }
 
 .unsubscribeModal .methodBadge {
@@ -857,13 +852,13 @@ html::before {
 }
 
 .unsubscribeModal .modalActions .button.primary {
-    background: #4f46e5;
+    background: var(--decluttr-accent);
     color: #fff;
-    border-color: #4f46e5;
+    border-color: var(--decluttr-accent);
 }
 
 .unsubscribeModal .modalActions .button.primary:hover {
-    background: #4338ca;
+    background: var(--decluttr-accent-hover);
     color: #fff;
 }
 
@@ -873,7 +868,7 @@ html::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(102, 126, 234, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     z-index: 1000;
@@ -884,10 +879,10 @@ html::before {
 }
 
 .modalContent {
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--decluttr-card-bg);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(102, 126, 234, 0.3);
+    border: 1px solid var(--decluttr-surface-border);
     border-radius: 20px;
     padding: 24px;
     max-width: 500px;
@@ -896,20 +891,20 @@ html::before {
     overflow-y: auto;
     position: relative;
     margin: 20px;
-    box-shadow: 0 12px 40px 0 rgba(102, 126, 234, 0.4);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 
 .closeButton {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: rgba(102, 126, 234, 0.2);
+    background: var(--decluttr-input-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(102, 126, 234, 0.4);
+    border: 1px solid var(--decluttr-surface-border);
     font-size: 24px;
     cursor: pointer;
-    color: #4f46e5;
+    color: var(--decluttr-accent);
     width: 32px;
     height: 32px;
     display: flex;
@@ -921,21 +916,21 @@ html::before {
 }
 
 .closeButton:hover {
-    background: rgba(102, 126, 234, 0.3);
-    color: #4338ca;
+    background: var(--decluttr-surface);
+    color: var(--decluttr-accent-hover);
     transform: rotate(90deg);
 }
 
 .modalHeader {
     margin-bottom: 15px;
     padding-bottom: 15px;
-    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+    border-bottom: 2px solid var(--decluttr-surface-border);
 }
 
 .modalHeader h3 {
     margin: 0 0 10px 0;
     font-size: 20px;
-    color: #1e1b4b;
+    color: var(--decluttr-text);
     font-weight: 700;
 }
 
@@ -944,7 +939,7 @@ html::before {
     flex-direction: column;
     gap: 5px;
     font-size: 13px;
-    color: #4f46e5;
+    color: var(--decluttr-accent);
     font-weight: 500;
 }
 
@@ -953,7 +948,7 @@ html::before {
 }
 
 .emailContent {
-    background: rgba(249, 250, 251, 0.9);
+    background: var(--decluttr-input-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 16px;
@@ -961,27 +956,27 @@ html::before {
     margin-bottom: 15px;
     font-size: 14px;
     line-height: 1.7;
-    color: #1f2937;
+    color: var(--decluttr-text);
     white-space: pre-wrap;
     word-wrap: break-word;
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid rgba(102, 126, 234, 0.2);
+    border: 1px solid var(--decluttr-surface-border);
     font-weight: 400;
 }
 
 .emailContent a.emailLink {
-    color: #4f46e5;
+    color: var(--decluttr-accent);
     text-decoration: none;
-    border-bottom: 1px solid rgba(79, 70, 229, 0.3);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.4);
     transition: all 0.2s ease;
     font-weight: 500;
 }
 
 .emailContent a.emailLink:hover {
-    color: #4338ca;
-    border-bottom-color: #4338ca;
-    background: rgba(102, 126, 234, 0.1);
+    color: var(--decluttr-accent-hover);
+    border-bottom-color: var(--decluttr-accent-hover);
+    background: rgba(99, 102, 241, 0.15);
     padding: 2px 4px;
     margin: -2px -4px;
     border-radius: 4px;
@@ -995,7 +990,7 @@ html::before {
     }
 }
 
-/* Scrollbar styling - Blue theme */
+/* Scrollbar styling */
 .emailList::-webkit-scrollbar,
 .emailContent::-webkit-scrollbar,
 .modalContent::-webkit-scrollbar {
@@ -1005,19 +1000,19 @@ html::before {
 .emailList::-webkit-scrollbar-track,
 .emailContent::-webkit-scrollbar-track,
 .modalContent::-webkit-scrollbar-track {
-    background: rgba(102, 126, 234, 0.1);
+    background: var(--decluttr-input-bg);
     border-radius: 4px;
 }
 
 .emailList::-webkit-scrollbar-thumb,
 .emailContent::-webkit-scrollbar-thumb,
 .modalContent::-webkit-scrollbar-thumb {
-    background: rgba(102, 126, 234, 0.3);
+    background: var(--decluttr-surface-border);
     border-radius: 4px;
 }
 
 .emailList::-webkit-scrollbar-thumb:hover,
 .emailContent::-webkit-scrollbar-thumb:hover,
 .modalContent::-webkit-scrollbar-thumb:hover {
-    background: rgba(102, 126, 234, 0.5);
+    background: var(--decluttr-text-muted);
 }
