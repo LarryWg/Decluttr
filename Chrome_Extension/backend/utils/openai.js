@@ -31,9 +31,10 @@ async function summarizeEmail(emailContent, apiKey) {
 
   const prompt = `Analyze each email. Provide:
 1. A concise 2-3 sentence summary focusing on actionable content
-2. A category: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other". If the email is or could be a job application email (e.g. application confirmation, "we received your application", interview invite/scheduling, rejection, offer, recruiter email), set category to "Job". When in doubt, prefer "Job" for any application-related wording.
+2. A category: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other".
+   Use "Job" ONLY for JOB APPLICATION pipeline emails: a response about an application the candidate already submitted (application confirmation, interview invite, rejection, or job offer from that company). Do NOT use "Job" for: (a) emails the candidate SENT to companies, (b) online assessments/OAs, or (c) new job opportunity / recruiter outreach ("we have roles", "interested in opportunities", cold outreach, job boards)—those are NOT job applications; use "Other" or "Newsletter".
 3. Whether it contains an unsubscribe link (true/false)
-4. jobType: only when category is "Job", set to one of "application_confirmation", "interview", "rejection", "offer"; otherwise set to null.
+4. jobType: only when category is "Job", set to one of "application_confirmation", "interview", "rejection", "offer" (job offer / accepted); otherwise set to null.
 
 Email content:
 ${truncatedContent}
@@ -129,7 +130,7 @@ async function categorizeEmail(emailContent, apiKey) {
 
   const openai = createOpenAIClient(apiKey);
 
-  const prompt = `Categorize the following email into one of these categories: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other". Use "Job" for any email that could possibly be job-application-related (confirmations, interviews, rejections, offers, recruiter emails). When in doubt, prefer "Job".
+  const prompt = `Categorize the following email into one of these categories: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other". Use "Job" ONLY for JOB APPLICATION pipeline emails (response about an application already submitted: confirmation, interview, rejection, offer). Do NOT use "Job" for: emails the candidate sent, OAs, or new job opportunity/recruiter outreach—use "Other" or "Newsletter" for those.
 
 Email content:
 ${truncatedContent}

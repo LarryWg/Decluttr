@@ -1,7 +1,7 @@
 /**
  * UI Controller - Handles all UI rendering and updates
  */
-import { INBOX_CATEGORIES, DEFAULT_INBOX } from '../config/constants.js';
+import { INBOX_CATEGORIES, DEFAULT_INBOX, JOB_TYPE_LABELS, VALID_JOB_TYPES } from '../config/constants.js';
 import { escapeHtml, convertUrlsToLinks } from '../utils/textUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 
@@ -74,8 +74,10 @@ export class UIController {
         // Check if we have cached AI results
         const cachedResults = this.emailRepository.getCachedResult(email.id);
         const category = cachedResults ? cachedResults.category : null;
+        const jobType = cachedResults ? cachedResults.jobType : null;
         const hasUnsubscribe = cachedResults ? cachedResults.hasUnsubscribe : false;
-        const isJobApplication = category === 'Job' || email.inboxCategory === INBOX_CATEGORIES.JOB;
+        const isJobApplication = category === 'Job' || email.inboxCategory === INBOX_CATEGORIES.JOB || (jobType && VALID_JOB_TYPES.includes(jobType));
+        const jobStageLabel = isJobApplication && jobType && JOB_TYPE_LABELS[jobType] ? JOB_TYPE_LABELS[jobType] : (isJobApplication ? 'Job application' : null);
 
         // Format date (relative time)
         const dateStr = formatDate(email.date);
@@ -89,8 +91,8 @@ export class UIController {
             <div class="emailPreview">${escapeHtml(email.snippet)}</div>
             <div class="emailActions">
                 <div class="emailBadges">
-                    ${category && category !== 'Job' ? `<span class="categoryBadge ${category.toLowerCase()}">${category}</span>` : ''}
-                    ${isJobApplication ? '<span class="jobApplicationBadge">Job application</span>' : ''}
+                    ${category && category !== 'Job' && !jobType ? `<span class="categoryBadge ${category.toLowerCase()}">${category}</span>` : ''}
+                    ${jobStageLabel ? `<span class="jobApplicationBadge">${escapeHtml(jobStageLabel)}</span>` : ''}
                     ${hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe Available</span>' : ''}
                 </div>
                 <button class="button small processEmailBtn" style="margin-top: 8px; width: 100%;">Process with AI</button>
@@ -142,14 +144,15 @@ export class UIController {
                 this.emailRepository.setCache(email.id, results);
             }
 
-            // Update email's inbox category based on AI category
-            email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category);
+            // Update email's inbox category based on AI category and jobType
+            email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType);
             
             // Update card with results
             this.updateEmailCardWithResults(card, results);
 
-            // If classified as Job, apply Gmail label (same as auto-categorize)
-            if (results.category === 'Job' && typeof this.onJobEmailClassified === 'function') {
+            // If classified as Job (category or jobType), apply Gmail label (same as auto-categorize)
+            const isJob = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
+            if (isJob && typeof this.onJobEmailClassified === 'function') {
                 this.onJobEmailClassified(email).catch(err => console.warn('Job label apply failed:', err));
             }
 
@@ -206,19 +209,20 @@ export class UIController {
             existingSummary.remove();
         }
 
-        // Add category badge (skip "Job" — we show Job application badge instead)
-        if (results.category && results.category !== 'Job') {
+        // Add category badge (skip "Job" when we show job stage badge)
+        const isJobResult = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
+        if (results.category && results.category !== 'Job' && !results.jobType) {
             const categoryBadge = document.createElement('span');
             categoryBadge.className = `categoryBadge ${results.category.toLowerCase()}`;
             categoryBadge.textContent = results.category;
             badgesContainer.appendChild(categoryBadge);
         }
 
-        // Add Job application badge (like Unsubscribe Available)
-        if (results.category === 'Job') {
+        // Add Job application / stage badge (Application submitted, Interview, Accepted, Rejected, or generic Job application)
+        if (isJobResult) {
             const jobBadge = document.createElement('span');
             jobBadge.className = 'jobApplicationBadge';
-            jobBadge.textContent = 'Job application';
+            jobBadge.textContent = results.jobType && JOB_TYPE_LABELS[results.jobType] ? JOB_TYPE_LABELS[results.jobType] : 'Job application';
             badgesContainer.appendChild(jobBadge);
         }
 
@@ -261,13 +265,15 @@ export class UIController {
         const cachedResults = this.emailRepository.getCachedResult(email.id);
         
         if (cachedResults) {
+            const isJobCached = cachedResults.category === 'Job' || (cachedResults.jobType && VALID_JOB_TYPES.includes(cachedResults.jobType));
+            const jobStageLabel = isJobCached && cachedResults.jobType && JOB_TYPE_LABELS[cachedResults.jobType] ? JOB_TYPE_LABELS[cachedResults.jobType] : (isJobCached ? 'Job application' : null);
+            const badgeHtml = jobStageLabel
+                ? `<div class="jobApplicationBadge" style="margin-bottom: 10px;">${escapeHtml(jobStageLabel)}</div>`
+                : (cachedResults.category ? `<div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">${escapeHtml(cachedResults.category)}</div>` : '');
             this.domRefs.modalAiResults.innerHTML = `
                 <h4>AI Analysis</h4>
                 <div class="aiResults">
-                    ${cachedResults.category === 'Job'
-                        ? '<div class="jobApplicationBadge" style="margin-bottom: 10px;">Job application</div>'
-                        : `<div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">${cachedResults.category}</div>`
-                    }
+                    ${badgeHtml}
                     <div class="aiSummary">
                         <strong>Summary:</strong><br>
                         ${escapeHtml(cachedResults.summary)}
@@ -295,8 +301,13 @@ export class UIController {
                 try {
                     const results = await this.backendApiService.processEmailWithAI(email);
                     this.emailRepository.setCache(email.id, results);
-                    // Update email's inbox category based on AI category
-                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category);
+                    // Update email's inbox category based on AI category and jobType
+                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType);
+                    // If jobType set, apply Gmail job label
+                    const isJob = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
+                    if (isJob && typeof this.onJobEmailClassified === 'function') {
+                        this.onJobEmailClassified(email).catch(err => console.warn('Job label apply failed:', err));
+                    }
                     this.showEmailModal(email); // Refresh modal with results
                 } catch (error) {
                     this.showError('Failed to process email: ' + error.message);

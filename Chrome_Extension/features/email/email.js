@@ -319,7 +319,7 @@ class EmailController {
             await Promise.all(batch.map(async (email) => {
                 const cachedResults = this.emailRepository.getCachedResult(email.id);
                 if (cachedResults) {
-                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cachedResults.category);
+                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cachedResults.category, cachedResults.jobType);
                     if (email.inboxCategory === INBOX_CATEGORIES.JOB) {
                         await this.applyJobLabelForEmail(email);
                     }
@@ -328,7 +328,7 @@ class EmailController {
                 try {
                     const results = await this.backendApiService.processEmailWithAI(email);
                     this.emailRepository.setCache(email.id, results);
-                    const mappedCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category);
+                    const mappedCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType);
                     email.inboxCategory = mappedCategory;
                     if (mappedCategory === INBOX_CATEGORIES.JOB) {
                         await this.applyJobLabelForEmail(email).catch(err => console.error(`Job label error for ${email.id}:`, err));

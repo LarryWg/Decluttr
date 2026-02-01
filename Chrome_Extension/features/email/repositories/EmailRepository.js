@@ -1,7 +1,7 @@
 /**
  * Email Repository - Manages email state and cache
  */
-import { DEFAULT_INBOX, STORAGE_KEY_UNSUBSCRIBED, STORAGE_KEY_JOB_LABEL_ID, INBOX_CATEGORIES } from '../config/constants.js';
+import { DEFAULT_INBOX, STORAGE_KEY_UNSUBSCRIBED, STORAGE_KEY_JOB_LABEL_ID, INBOX_CATEGORIES, VALID_JOB_TYPES } from '../config/constants.js';
 
 export class EmailRepository {
     constructor() {
@@ -36,7 +36,9 @@ export class EmailRepository {
         if (this.selectedInbox === INBOX_CATEGORIES.JOB) {
             return this.currentEmails.filter((e) => {
                 if (e.inboxCategory === INBOX_CATEGORIES.JOB) return true;
-                return this.jobLabelId && e.labelIds && Array.isArray(e.labelIds) && e.labelIds.includes(this.jobLabelId);
+                if (this.jobLabelId && e.labelIds && Array.isArray(e.labelIds) && e.labelIds.includes(this.jobLabelId)) return true;
+                const cached = this.getCachedResult(e.id);
+                return cached?.jobType && VALID_JOB_TYPES.includes(cached.jobType);
             });
         }
         return this.currentEmails.filter((email) => email.inboxCategory === this.selectedInbox);

@@ -1,7 +1,7 @@
 /**
  * Email Classification Service - Handles email categorization and grouping
  */
-import { INBOX_CATEGORIES } from '../config/constants.js';
+import { INBOX_CATEGORIES, VALID_JOB_TYPES } from '../config/constants.js';
 
 export class EmailClassificationService {
     constructor(emailRepository, emailParserService) {
@@ -9,7 +9,15 @@ export class EmailClassificationService {
         this.emailParserService = emailParserService;
     }
 
-    mapAiCategoryToInboxCategory(aiCategory) {
+    /**
+     * Map AI category (and optional jobType) to inbox category.
+     * When jobType is a valid job stage, returns JOB regardless of aiCategory.
+     * @param {string} aiCategory - AI category (e.g. 'Job', 'Promotional')
+     * @param {string|null} [jobType] - Optional job stage (application_confirmation, interview, rejection, offer)
+     * @returns {string} Inbox category key
+     */
+    mapAiCategoryToInboxCategory(aiCategory, jobType = null) {
+        if (jobType && VALID_JOB_TYPES.includes(jobType)) return INBOX_CATEGORIES.JOB;
         if (aiCategory === 'Job') return INBOX_CATEGORIES.JOB;
         if (aiCategory === 'Promotional') return INBOX_CATEGORIES.PROMOTIONS;
         return INBOX_CATEGORIES.PRIMARY;

@@ -20,6 +20,17 @@ export const INBOX_CATEGORIES = {
 export const STORAGE_KEY_JOB_LABEL_ID = 'gmail_job_label_id';
 export const JOB_LABEL_NAME = 'Decluttr/Job';
 
+// Job application stages (backend jobType values)
+export const VALID_JOB_TYPES = ['application_confirmation', 'interview', 'rejection', 'offer'];
+
+/** Display labels for job stage (user-facing wording) */
+export const JOB_TYPE_LABELS = {
+    application_confirmation: 'Application submitted',
+    interview: 'Interview',
+    rejection: 'Rejected',
+    offer: 'Accepted'
+};
+
 export const DEFAULT_INBOX = INBOX_CATEGORIES.PRIMARY;
 export const STORAGE_KEY_UNSUBSCRIBED = 'unsubscribed_senders';
 

@@ -148,7 +148,7 @@ function drawResults(result) {
         const landmarks = result.faceLandmarks[0];
         checkFocus(landmarks);
         //Drawing the dots on the eyes:
-        /*
+        
         const eyeIndices = [468, 473];
         
         // Instant color swap based on the timer status
@@ -160,7 +160,7 @@ function drawResults(result) {
             ctx.arc(point.x * canvas.width, point.y * canvas.height, 4, 0, 2 * Math.PI);
             ctx.fill();
         });
-        */
+        
     }
     
 }
