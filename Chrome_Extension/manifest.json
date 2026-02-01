@@ -23,7 +23,7 @@
     ]
   },
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "features/focus/background.js",
     "type": "module"
   },
   "action": {
@@ -33,7 +33,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "css": ["features/focus/focus.css"]
+      "css": ["features/focus/distraction-overlay.css"]
     }
   ],
   "content_security_policy": {

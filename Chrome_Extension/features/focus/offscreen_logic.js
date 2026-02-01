@@ -15,26 +15,27 @@ let lastVideoTime = -1;
 let lookAwayStartTime = null; 
 const LOOK_AWAY_THRESHOLD = 2000; // 2 seconds
 
-// --- Event Listeners ---
-backBtn.addEventListener("click", () => {
-    window.location.href = "../../popup/App.html";
-});
-
-toggleCamBtn.addEventListener('click', () => {
-    if (video.classList.contains('video-hidden')) {
-        // SHOWING CAMERA
-        video.classList.remove('video-hidden');
-        video.classList.add('video-visible');
-        toggleCamBtn.textContent = 'Hide Camera';
-        toggleCamBtn.classList.add('active-btn');
-    } else {
-        // HIDING CAMERA
-        video.classList.remove('video-visible');
-        video.classList.add('video-hidden');
-        toggleCamBtn.textContent = 'Show Camera';
-        toggleCamBtn.classList.remove('active-btn');
-    }
-});
+// --- Event Listeners (only in popup UI - backBtn/toggleCamBtn don't exist in offscreen) ---
+if (backBtn) {
+    backBtn.addEventListener("click", () => {
+        window.location.href = "../../popup/App.html";
+    });
+}
+if (toggleCamBtn) {
+    toggleCamBtn.addEventListener('click', () => {
+        if (video.classList.contains('video-hidden')) {
+            video.classList.remove('video-hidden');
+            video.classList.add('video-visible');
+            toggleCamBtn.textContent = 'Hide Camera';
+            toggleCamBtn.classList.add('active-btn');
+        } else {
+            video.classList.remove('video-visible');
+            video.classList.add('video-hidden');
+            toggleCamBtn.textContent = 'Show Camera';
+            toggleCamBtn.classList.remove('active-btn');
+        }
+    });
+}
 
 // --- MediaPipe Initialization ---
 async function initMediaPipe() {
