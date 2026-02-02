@@ -23,8 +23,9 @@ Chrome extension for email management, AI summaries, and productivity tools.
    cp .env.example .env
    ```
    Set `OPENAI_API_KEY` in `.env` (required for AI summaries).
+   Set `SERPAPI_KEY` in `.env` (required for LinkedIn automatic search summaries).
 
-3. Start the server:
+4. Start the server:
    ```bash
    npm start
    ```
