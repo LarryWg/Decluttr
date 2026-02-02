@@ -85,6 +85,7 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 toggleCamBtn.addEventListener('click', async () => {
+    const isShowing = video.classList.contains('video-hidden');
     if (video.classList.contains('video-hidden')) {
         video.classList.remove('video-hidden');
         video.classList.add('video-visible');
@@ -92,6 +93,8 @@ toggleCamBtn.addEventListener('click', async () => {
         toggleCamBtn.querySelector('.btn-label').textContent = 'Hide Camera';
         toggleCamBtn.querySelector('.btn-icon').textContent = '■';
         toggleCamBtn.classList.add('active');
+        chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: isShowing });
+
         if (!cameraStarted) {
             toggleCamBtn.disabled = true;
             toggleCamBtn.querySelector('.btn-label').textContent = 'Starting...';
@@ -108,7 +111,16 @@ toggleCamBtn.addEventListener('click', async () => {
         toggleCamBtn.querySelector('.btn-label').textContent = 'Show Camera';
         toggleCamBtn.querySelector('.btn-icon').textContent = '▶';
         toggleCamBtn.classList.remove('active');
+        
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+        chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: false });
+        chrome.runtime.sendMessage({ type: 'ALARM_STATE', active: false });
+        cameraStarted = false;
         setStatus('ready');
+
     }
 });
 

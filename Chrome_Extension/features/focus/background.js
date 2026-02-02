@@ -1,18 +1,24 @@
 // background.js
+
+
+// --- Global Variables ---
+let isDistracted = false;
+let statsInterval = null;
+let cameraShouldBeActive = false;
 let sessionStats = {
     focusedSeconds: 0,
     distractedSeconds: 0,
 }
-let isDistracted = false;
-let statsInterval = null;
 
 function startStatsTimer() {
   if (statsInterval) return;
   statsInterval = setInterval(() => {
-    if (isDistracted) {
-      sessionStats.distractedSeconds++;
-    } else {
-      sessionStats.focusedSeconds++;
+    if (cameraShouldBeActive) {
+        if (isDistracted) {
+            sessionStats.distractedSeconds++;
+        } else {
+            sessionStats.focusedSeconds++;
+        }
     }
 
     chrome.runtime.sendMessage({
@@ -41,6 +47,7 @@ async function closeOffscreen() {
   }
 }
 
+// --- Chrome Listeners ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'FOCUS_UI_OPEN') {
     closeOffscreen()
@@ -53,22 +60,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'FOCUS_UI_CLOSED') {
-    setupOffscreen()
-      .then(() => sendResponse({ ok: true }))
-      .catch(() => sendResponse({ ok: false }));
+    // Only start background tracking if the user hasn't hidden the camera
+    if (cameraShouldBeActive) {
+      setupOffscreen();
+    }
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === 'SET_CAMERA_STATE') {
+    cameraShouldBeActive = message.active;
+    if (!cameraShouldBeActive) {
+      closeOffscreen();
+    }
+    sendResponse({ ok: true });
     return true;
   }
 
   if (message.type === 'RESET_STATS') {
+    isDistracted = message.active;
     sessionStats.focusedSeconds = 0;
     sessionStats.distractedSeconds = 0;
-    chrome.runtime.sendMessage({
-        type: 'STATS_UPDATE',
-        stats: sessionStats
-    }).catch(() => {});
+    chrome.runtime.sendMessage({ type: 'STATS_UPDATE', stats: sessionStats }).catch(() => {});
     sendResponse({ ok: true });
     return true;
-    }
+  }
 
   if (message.type === 'ALARM_STATE') {
     isDistracted = message.active;

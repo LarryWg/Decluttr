@@ -145,4 +145,9 @@ async function startCamera() {
     }
 }
 
-initMediaPipe();
+async function initOffscreen() {
+    await initMediaPipe();
+    await startCamera();
+}
+
+initOffscreen();
