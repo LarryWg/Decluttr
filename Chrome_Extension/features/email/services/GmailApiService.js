@@ -1,7 +1,7 @@
 /**
  * Gmail API Service - Handles Gmail API calls
  */
-import { MAX_EMAILS_TO_FETCH, STORAGE_KEY_JOB_LABEL_ID, JOB_LABEL_NAME } from '../config/constants.js';
+import { MAX_EMAILS_TO_FETCH, STORAGE_KEY_JOB_LABEL_ID, JOB_LABEL_NAME, CUSTOM_LABEL_PREFIX } from '../config/constants.js';
 import { EmailParserService } from './EmailParserService.js';
 
 export class GmailApiService {
@@ -221,6 +221,57 @@ export class GmailApiService {
             chrome.storage.local.set({ [STORAGE_KEY_JOB_LABEL_ID]: labelId }, resolve);
         });
         return labelId;
+    }
+
+    /**
+     * Get or create a custom Gmail label (e.g. Decluttr/Work). Used for user-defined auto-labels.
+     * @param {string} userLabelName - User-facing name (e.g. "Work"); full Gmail name will be Decluttr/Work
+     * @returns {Promise<string>} Gmail label ID
+     */
+    async getOrCreateCustomLabel(userLabelName) {
+        const trimmed = (userLabelName || '').trim();
+        if (!trimmed) {
+            throw new Error('Label name is required');
+        }
+        const fullName = CUSTOM_LABEL_PREFIX + trimmed;
+        const token = await getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+        const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!listRes.ok) {
+            if (listRes.status === 401) {
+                await refreshToken();
+                return this.getOrCreateCustomLabel(userLabelName);
+            }
+            throw new Error(`Gmail labels list failed: ${listRes.status}`);
+        }
+        const listData = await listRes.json();
+        const labels = listData.labels || [];
+        const found = labels.find((l) => l.name === fullName);
+        if (found) {
+            return found.id;
+        }
+        const createRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: fullName })
+        });
+        if (!createRes.ok) {
+            if (createRes.status === 401) {
+                await refreshToken();
+                return this.getOrCreateCustomLabel(userLabelName);
+            }
+            const errBody = await createRes.text().catch(() => '');
+            throw new Error(`Gmail label create failed: ${createRes.status} ${errBody.slice(0, 100)}`);
+        }
+        const createData = await createRes.json();
+        return createData.id;
     }
 
     async addLabelToMessages(messageIds, labelId) {

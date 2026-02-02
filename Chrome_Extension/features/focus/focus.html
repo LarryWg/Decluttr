@@ -20,7 +20,16 @@
 
         <main class="focus-main">
             <p class="focus-description">Eye tracking keeps you accountable. Look away for 2+ seconds to get a nudge.</p>
-            
+            <div class="stats-grid">
+                <div class="stat-glass-card">
+                    <span class="stat-label">Focused</span>
+                    <span class="stat-value" id="focusTime">00:00</span>
+                </div>
+                <div class="stat-glass-card">
+                    <span class="stat-label">Distracted</span>
+                    <span class="stat-value" id="distractTime">00:00</span>
+                </div>
+            </div>
             <button id="toggleCamBtn" class="focus-toggle-btn">
                 <span class="btn-icon">▶</span>
                 <span class="btn-label">Show Camera</span>

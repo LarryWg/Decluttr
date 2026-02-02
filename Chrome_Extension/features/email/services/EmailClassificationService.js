@@ -10,16 +10,16 @@ export class EmailClassificationService {
     }
 
     /**
-     * Map AI category (and optional jobType) to inbox category.
-     * When jobType is a valid job stage, returns JOB regardless of aiCategory.
-     * @param {string} aiCategory - AI category (e.g. 'Job', 'Promotional')
-     * @param {string|null} [jobType] - Optional job stage (application_confirmation, interview, rejection, offer)
-     * @returns {string} Inbox category key
+     * Map AI result to inbox category: Job → Job; hasUnsubscribe → Promotions; else Primary.
+     * @param {string} aiCategory - AI category ('Job' or 'Other')
+     * @param {string|null} [jobType] - Optional job stage (applications_sent, interview, etc.)
+     * @param {boolean} [hasUnsubscribe=false] - Whether email has unsubscribe option (→ Promotions)
+     * @returns {string} Inbox category key (primary, promotions, job)
      */
-    mapAiCategoryToInboxCategory(aiCategory, jobType = null) {
+    mapAiCategoryToInboxCategory(aiCategory, jobType = null, hasUnsubscribe = false) {
         if (jobType && VALID_JOB_TYPES.includes(jobType)) return INBOX_CATEGORIES.JOB;
         if (aiCategory === 'Job') return INBOX_CATEGORIES.JOB;
-        if (aiCategory === 'Promotional') return INBOX_CATEGORIES.PROMOTIONS;
+        if (hasUnsubscribe) return INBOX_CATEGORIES.PROMOTIONS;
         return INBOX_CATEGORIES.PRIMARY;
     }
 

@@ -20,6 +20,10 @@ export const INBOX_CATEGORIES = {
 export const STORAGE_KEY_JOB_LABEL_ID = 'gmail_job_label_id';
 export const JOB_LABEL_NAME = 'Decluttr/Job';
 
+// Custom user-defined auto-labels (name + description → Gmail label)
+export const STORAGE_KEY_CUSTOM_LABELS = 'decluttr_custom_labels';
+export const CUSTOM_LABEL_PREFIX = 'Decluttr/';
+
 // Job application pipeline stages (backend jobType / transition slugs)
 // New 8-stage transition model + legacy 4 for backward compatibility
 export const VALID_JOB_TYPES = [
