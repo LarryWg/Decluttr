@@ -6,38 +6,37 @@ const openai = new OpenAI({
 });
 
 /**
- * Search LinkedIn profiles using Google Custom Search API
+ * Search LinkedIn profiles using SerpAPI (Google Search)
  * @param {string} query - Search query (e.g., "ceo automotive united states")
  * @param {number} limit - Number of results to return (default: 10)
  * @returns {Promise<Array>} Array of LinkedIn profile objects
  */
 async function searchLinkedInProfiles(query, limit = 10) {
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-  const GOOGLE_CX = process.env.GOOGLE_SEARCH_ENGINE_ID;
+  const SERPAPI_KEY = process.env.SERPAPI_KEY;
 
-  if (!GOOGLE_API_KEY || !GOOGLE_CX) {
-    throw new Error('Google Search API credentials not configured. Please set GOOGLE_API_KEY and GOOGLE_SEARCH_ENGINE_ID in .env');
+  if (!SERPAPI_KEY) {
+    throw new Error('SERPAPI_KEY not configured. Please set SERPAPI_KEY in .env file. Get one at https://serpapi.com/');
   }
 
   try {
     // Construct search query with LinkedIn site filter
     const searchQuery = `${query} site:linkedin.com/in`;
     
-    const response = await axios.get('https://www.googleapis.com/customsearch/v1', {
+    const response = await axios.get('https://serpapi.com/search', {
       params: {
-        key: GOOGLE_API_KEY,
-        cx: GOOGLE_CX,
+        api_key: SERPAPI_KEY,
+        engine: 'google',
         q: searchQuery,
-        num: Math.min(limit, 10) // Google API max is 10 per request
+        num: Math.min(limit, 10)
       }
     });
 
-    if (!response.data.items || response.data.items.length === 0) {
+    if (!response.data.organic_results || response.data.organic_results.length === 0) {
       return [];
     }
 
     // Parse LinkedIn profiles from search results
-    const profiles = response.data.items.map(item => {
+    const profiles = response.data.organic_results.map(item => {
       const profile = parseLinkedInSearchResult(item);
       return profile;
     }).filter(profile => profile !== null);
@@ -50,8 +49,8 @@ async function searchLinkedInProfiles(query, limit = 10) {
 }
 
 /**
- * Parse LinkedIn profile data from Google search result
- * @param {Object} item - Google search result item
+ * Parse LinkedIn profile data from SerpAPI search result
+ * @param {Object} item - SerpAPI search result item
  * @returns {Object|null} Parsed profile object or null if parsing fails
  */
 function parseLinkedInSearchResult(item) {
@@ -80,7 +79,6 @@ function parseLinkedInSearchResult(item) {
     }
 
     // Extract location from snippet if available
-    // Common patterns: "Location: City, State" or "City, State Area"
     const locationMatch = snippet.match(/(?:Location:|based in|from)\s*([^\.]+?)(?:\s*\||$|\.)/i);
     if (locationMatch) {
       location = locationMatch[1].trim();
