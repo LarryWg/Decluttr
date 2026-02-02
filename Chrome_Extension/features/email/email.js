@@ -442,6 +442,7 @@ class EmailController {
         if (newInbox === this.emailRepository.getSelectedInbox()) return;
 
         this.emailRepository.setSelectedInbox(newInbox);
+        this.emailRepository.saveToStorage().catch((err) => console.warn('Save on inbox switch:', err));
         this.uiController.updateInboxTabsUI();
 
         if (newInbox === 'pipeline') {
@@ -580,4 +581,13 @@ class EmailController {
 document.addEventListener('DOMContentLoaded', async () => {
     const emailController = new EmailController();
     await emailController.init();
+
+    // Persist state when user leaves the tab so next session restores correctly
+    const saveOnLeave = () => {
+        emailController.emailRepository.saveToStorage().catch(() => {});
+    };
+    window.addEventListener('pagehide', saveOnLeave);
+    window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveOnLeave();
+    });
 });

@@ -17,7 +17,7 @@ function updateThemeIcon() {
 // Start background tracking when main UI opens (user not in Focus)
 chrome.runtime.sendMessage({ type: 'FOCUS_UI_CLOSED' });
 
-// Buttons open feature pages
+// Buttons open feature pages (in popup)
 document.getElementById("emailBtn").addEventListener("click", () => {
     window.location.href = "../features/email/email.html";
 });
