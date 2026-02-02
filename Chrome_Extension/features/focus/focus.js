@@ -139,6 +139,7 @@ function checkFocus(landmarks) {
         if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
             document.body.classList.add('alert-active');
             setStatus('distracted');
+            chrome.runtime.sendMessage({type: 'ALARM_STATE', active: true});
         } else {
             setStatus('tracking'); // Looking away but under threshold
         }
@@ -146,6 +147,7 @@ function checkFocus(landmarks) {
         lookAwayStartTime = null;
         document.body.classList.remove('alert-active');
         setStatus('focused');
+        chrome.runtime.sendMessage({type: 'ALARM_STATE', active: false});
     }
 }
 
