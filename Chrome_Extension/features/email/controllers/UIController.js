@@ -35,6 +35,10 @@ export class UIController {
                     emptyStateText.textContent = 'No promotional emails found';
                 } else if (selected === INBOX_CATEGORIES.JOB) {
                     emptyStateText.textContent = 'No job application emails found';
+                } else if (selected && selected.startsWith('custom:')) {
+                    const labelId = selected.slice(7);
+                    const label = this.emailRepository.getCustomLabels().find((l) => l.id === labelId);
+                    emptyStateText.textContent = label ? `No emails in "${label.name}"` : 'No emails with this label';
                 } else {
                     emptyStateText.textContent = 'No emails found';
                 }
@@ -92,7 +96,6 @@ export class UIController {
             <div class="emailPreview">${escapeHtml(email.snippet)}</div>
             <div class="emailActions">
                 <div class="emailBadges">
-                    ${category && category !== 'Job' && !jobType ? `<span class="categoryBadge ${category.toLowerCase()}">${category}</span>` : ''}
                     ${jobStageLabel ? `<span class="jobApplicationBadge">${escapeHtml(jobStageLabel)}</span>` : ''}
                     ${hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe Available</span>' : ''}
                 </div>
@@ -145,8 +148,8 @@ export class UIController {
                 this.emailRepository.setCache(email.id, results);
             }
 
-            // Update email's inbox category based on AI category and jobType
-            email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType);
+            // Update email's inbox category: Job → Job; hasUnsubscribe → Promotions; else Primary
+            email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType, results.hasUnsubscribe);
             
             // Update card with results
             this.updateEmailCardWithResults(card, results);
@@ -210,16 +213,8 @@ export class UIController {
             existingSummary.remove();
         }
 
-        // Add category badge (skip "Job" when we show job stage badge)
-        const isJobResult = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
-        if (results.category && results.category !== 'Job' && !results.jobType) {
-            const categoryBadge = document.createElement('span');
-            categoryBadge.className = `categoryBadge ${results.category.toLowerCase()}`;
-            categoryBadge.textContent = results.category;
-            badgesContainer.appendChild(categoryBadge);
-        }
-
         // Add job stage badge (Applications Sent, Interview, Accepted, Rejected, etc.)
+        const isJobResult = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
         if (isJobResult) {
             const jobBadge = document.createElement('span');
             jobBadge.className = 'jobApplicationBadge';
@@ -305,7 +300,7 @@ export class UIController {
                     const results = await this.backendApiService.processEmailWithAI(email);
                     this.emailRepository.setCache(email.id, results);
                     // Update email's inbox category based on AI category and jobType
-                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType);
+                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType, results.hasUnsubscribe);
                     // If jobType set, apply Gmail job label
                     const isJob = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
                     if (isJob && typeof this.onJobEmailClassified === 'function') {
@@ -440,11 +435,25 @@ export class UIController {
     }
 
     /**
-     * Update inbox tabs UI to highlight active tab
+     * Update inbox tabs UI: render custom-label tabs and highlight active tab
      */
     updateInboxTabsUI() {
         if (!this.domRefs.inboxTabs) return;
-        
+
+        const addBtn = this.domRefs.addCustomLabelTabBtn;
+        if (addBtn) {
+            const customLabels = this.emailRepository.getCustomLabels();
+            this.domRefs.inboxTabs.querySelectorAll('.inboxTab[data-inbox^="custom:"]').forEach((el) => el.remove());
+            customLabels.forEach((label) => {
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.className = 'inboxTab';
+                tab.dataset.inbox = `custom:${label.id}`;
+                tab.textContent = label.name;
+                this.domRefs.inboxTabs.insertBefore(tab, addBtn);
+            });
+        }
+
         const tabs = this.domRefs.inboxTabs.querySelectorAll('.inboxTab');
         tabs.forEach(tab => {
             if (tab.dataset.inbox === this.emailRepository.getSelectedInbox()) {

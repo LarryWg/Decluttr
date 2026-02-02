@@ -47,6 +47,17 @@
                 </div>
             </section>
 
+            <section class="settingsSection" id="customLabelsSection">
+                <h4 class="settingsSectionTitle">Custom auto-labels</h4>
+                <p class="settingsSectionHint">Use the + beside Pipeline to add labels. Toggle &ldquo;Add to Gmail&rdquo; and run &ldquo;Apply labels to inbox&rdquo; to update Gmail.</p>
+                <div class="customLabelsList" id="customLabelsList">
+                    <!-- Custom labels rendered here -->
+                </div>
+                <div class="customLabelsActions">
+                    <button type="button" class="button small" id="applyCustomLabelsBtn">Apply labels to inbox</button>
+                </div>
+            </section>
+
             <section class="settingsSection settingsSectionDeveloper">
                 <button type="button" class="settingsDeveloperToggle" id="developerOptionsToggle" aria-expanded="false">
                     <span>Developer options</span>
@@ -100,6 +111,7 @@
                 <button class="inboxTab" data-inbox="promotions">Promotions</button>
                 <button class="inboxTab" data-inbox="job">Job</button>
                 <button class="inboxTab" data-inbox="pipeline">Pipeline</button>
+                <button type="button" class="inboxTabAdd" id="addCustomLabelTabBtn" title="Add custom label">+</button>
             </div>
             <button class="button small" id="managePromotionsBtn" style="display: none; width: 100%; margin-bottom: 12px;">Manage Promotions</button>
             <div class="emailList" id="emailList">
@@ -169,6 +181,27 @@
                 <div class="aiResults" id="modalAiResults">
                     <!-- AI results will be inserted here -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Custom Label Modal (opened by + beside Pipeline) -->
+    <div class="emailModal" id="addCustomLabelModal" style="display: none;">
+        <div class="modalContent addCustomLabelModalContent">
+            <button class="closeButton" id="closeAddCustomLabelModalBtn" type="button" aria-label="Close">×</button>
+            <h3 class="addCustomLabelModalTitle">Add custom label</h3>
+            <p class="addCustomLabelModalHint">Create a label and describe what kind of emails should get it. AI will match emails when you run &ldquo;Apply labels to inbox&rdquo;.</p>
+            <div class="settingItem">
+                <label for="addCustomLabelModalName">Label name</label>
+                <input type="text" id="addCustomLabelModalName" class="settingInput" placeholder="e.g. Work" maxlength="50" />
+            </div>
+            <div class="settingItem">
+                <label for="addCustomLabelModalDescription">What kind of emails? (context for AI)</label>
+                <textarea id="addCustomLabelModalDescription" class="settingTextarea" rows="3" placeholder="e.g. Emails from my team, internal updates, or work-related from my company domain"></textarea>
+            </div>
+            <div class="addCustomLabelModalActions">
+                <button type="button" class="button" id="cancelAddCustomLabelModalBtn">Cancel</button>
+                <button type="button" class="button primary" id="confirmAddCustomLabelModalBtn">Add label</button>
             </div>
         </div>
     </div>

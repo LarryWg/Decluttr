@@ -29,20 +29,17 @@ async function summarizeEmail(emailContent, apiKey) {
 
   const openai = createOpenAIClient(apiKey);
 
-  const prompt = `You are an automated classifier for someone tracking their JOB APPLICATIONS during a job search. The "Job" category is ONLY for emails that are direct responses or notifications about a specific job application the user submitted. Any other email must NOT be "Job".
+  const prompt = `You are an automated classifier for someone tracking their JOB APPLICATIONS during a job search.
 
-RULE: Use category "Job" ONLY when the email is clearly a reply or automated notification from a company about an application the user sent to that company (e.g. "We received your application", "Your application status", "Interview invite for [role you applied to]", "We regret to inform you...", offer letter). If there is any doubt, use "Other" or "Newsletter" or "Personal" – never "Job".
+Output exactly two things that matter:
+1. Is this email a direct response or notification about a JOB APPLICATION the user submitted? If yes, category = "Job" and set the correct stage below. Otherwise category = "Other" and set transitionFrom/transitionTo to null.
+2. Does this email contain or reference an unsubscribe option (link, "unsubscribe", "manage preferences", "opt out", etc.)? Set hasUnsubscribe true or false.
 
-NEVER use "Job" for any of these (use "Other" or "Newsletter" or "Personal" and set transitionFrom/transitionTo to null):
-- One-time passcodes, login verification, "confirm your identity", OTP, verification code, "one-time pass code", "code to log in", "verify your email" for a company website or portal → "Other" (this is account/portal access, not a pipeline stage)
-- School, college, university, or graduate program applications → "Other"
-- Job boards, job alerts, "new jobs matching your profile", "roles you might like", LinkedIn/Indeed/Glassdoor listings or digests → "Newsletter" or "Other"
-- Recruiter cold outreach, "we have opportunities", "we'd like to connect" when the user did not first apply to that company → "Other"
-- "Interview" meaning media/podcast/marketing interview, or any non–job-application context → "Other"; only use Interview stage when it is clearly a job interview for a role the user applied to at that company
-- Emails the user SENT (their own applications, follow-ups, thank-yous) → "Other"
-- General career advice, webinars, events, or newsletters → "Other" or "Newsletter"
+Use category "Job" ONLY when the email is clearly from a company about an application the user sent (e.g. "We received your application", "Your application status", "Interview invite", rejection, offer letter). If there is any doubt, use "Other".
 
-Use ONLY these stages (exact spelling) when category is "Job":
+NEVER use "Job" for: one-time passcodes, login verification, OTP, school/university applications, job boards/job alerts/LinkedIn listings, recruiter cold outreach, emails the user sent, general newsletters. Use "Other" and set transitionFrom/transitionTo to null.
+
+When category is "Job", use ONLY these stages (exact spelling):
 - Applications Sent
 - OA / Screening
 - Interview
@@ -53,29 +50,24 @@ Use ONLY these stages (exact spelling) when category is "Job":
 - Declined
 
 Stage rules (only when category is "Job" – i.e. direct response about an application the user submitted):
-- Application received/confirmed by company (e.g. "We received your application", "Thanks for applying") → Applications Sent
-- Online assessment, recruiter screen, or technical test for that application → OA / Screening
-- Job interview invite or completion for the role they applied to → Interview
+- Applications Sent: Application received/confirmed by company. Use this for: "We received your application", "Thanks for applying", "Thank you for applying to [role]", "we're thrilled you're interested". Also use Applications Sent (NOT Interview) when the email only mentions interview as a *future possibility*: e.g. "Should you be selected to interview, we will reach out", "we may reach out in the coming weeks", "if we'd like to move forward we'll contact you", "a member of our Talent team will reach out" (with no actual invite or date). If they are not actually inviting or scheduling an interview in this email → Applications Sent.
+- OA / Screening: Online assessment (coding test, HackerRank, Codility), recruiter phone screen, initial screening call, "first round", "technical assessment" (before a formal interview round), "schedule a call to learn more about your background". Use this for early filtering steps before a formal interview.
+- Interview: Use ONLY when the company is actually inviting or scheduling an interview in this email. Examples: "We would like to invite you to an interview", "schedule your interview", "pick a time for your interview", "interview day", "final round interview", "onsite interview", "virtual interview" (when they are setting it up, not just mentioning it might happen). Do NOT use Interview for: (1) Application confirmations that only say they might contact you later ("should you be selected to interview", "we'll reach out if we'd like to interview you", "a member of our team will reach out in the coming weeks" with no invite/link) → use Applications Sent; (2) recruiter screening calls, phone screens, "quick call", OA; (3) media/podcast interview. If no concrete invite or scheduling link/time is in the email → Applications Sent.
 - Job offer letter or verbal offer → Offer
 - Offer acceptance → Accepted
 - Rejection (explicit or polite): "we will not be moving forward", "not moving forward with your candidacy", "prioritizing other profiles", "we have decided not to move forward", "thank you for your interest... however we will not be moving forward", "we will not be moving forward with your candidacy for the moment" → Rejected
 - No response after long delay → No Response
 - User declined offer → Declined
 
-Also provide:
-1. A concise 2-3 sentence summary (summary).
-2. category: "Job" ONLY when the email is unmistakably a direct response/notification about a job application the user submitted. Otherwise "Other", "Newsletter", or "Personal".
-3. hasUnsubscribe: true or false.
-
-Output format: if a stage transition is detected and category is "Job", set transitionFrom and transitionTo to the exact stage names above. Otherwise set both to null.
+Provide: summary (2-3 sentences), category ("Job" or "Other"), hasUnsubscribe (true/false), transitionFrom and transitionTo (exact stage names or null).
 
 Email content:
 ${truncatedContent}
 
-Respond ONLY with valid JSON in this exact format:
+Respond ONLY with valid JSON:
 {
   "summary": "2-3 sentence summary here",
-  "category": "Job or Personal or Promotional or Spam or Newsletter or Other",
+  "category": "Job or Other",
   "hasUnsubscribe": true or false,
   "transitionFrom": "exact stage name or null",
   "transitionTo": "exact stage name or null"
@@ -133,11 +125,8 @@ Respond ONLY with valid JSON in this exact format:
     if (categoryRaw === 'Job application' || categoryRaw.toLowerCase() === 'job application') {
       result.category = 'Job';
     }
-    const validCategories = ['Personal', 'Promotional', 'Spam', 'Newsletter', 'Job', 'Other'];
-    if (!validCategories.includes(result.category)) {
-      result.category = 'Other';
-    }
-    if (result.category === 'Work') {
+    const validCategories = ['Job', 'Other'];
+    if (result.category !== 'Job') {
       result.category = 'Other';
     }
 
@@ -351,9 +340,85 @@ async function detectUnsubscribe(emailContent, apiKey) {
   return { hasUnsubscribe: false, unsubscribeLink: null };
 }
 
+/**
+ * Check if an email matches a user-defined label based on context/description
+ * @param {string} emailContent - Full email content (subject + body)
+ * @param {string} labelName - User-facing label name (e.g. "Work", "Newsletters")
+ * @param {string} labelDescription - User's description of what emails should get this label
+ * @param {string} apiKey - OpenAI API key
+ * @returns {Promise<{match: boolean}>}
+ */
+async function matchCustomLabel(emailContent, labelName, labelDescription, apiKey) {
+  if (!emailContent || typeof emailContent !== 'string' || emailContent.trim().length === 0) {
+    throw new Error('Email content is required and must be a non-empty string');
+  }
+  if (!labelName || typeof labelName !== 'string' || !labelName.trim()) {
+    throw new Error('Label name is required');
+  }
+  if (!labelDescription || typeof labelDescription !== 'string' || !labelDescription.trim()) {
+    throw new Error('Label description is required');
+  }
+
+  const truncatedContent = emailContent.length > 6000 ? emailContent.slice(-6000) : emailContent;
+  const openai = createOpenAIClient(apiKey);
+
+  const prompt = `You are an email classifier. The user has created a Gmail label called "${labelName}" and described what kind of emails should get this label:
+
+"${labelDescription}"
+
+Use BOTH the label name and the user's description to decide. Infer context from the label name itself (e.g. "Work" suggests work-related, "Newsletters" suggests newsletter signups, "Finance" suggests bills/banking). Combine that with the user's description – the user's description may not be precise, so the label name helps narrow it. Only say match: true if the email clearly fits the label name and/or description; when in doubt, say no.
+
+Email content:
+${truncatedContent}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "match": true or false
+}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'You are an email classification assistant. Always respond with valid JSON only, no additional text.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2,
+      max_tokens: 50
+    });
+
+    const responseText = completion.choices?.[0]?.message?.content?.trim();
+    if (!responseText) {
+      return { match: false };
+    }
+
+    let jsonText = responseText;
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[0];
+    }
+
+    const result = JSON.parse(jsonText);
+    const match = result.match === true;
+    return { match };
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return { match: false };
+    }
+    if (error.response?.status === 401) {
+      throw new Error('Invalid OpenAI API key');
+    }
+    if (error.response?.status === 429) {
+      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+    }
+    throw new Error(`OpenAI API error: ${error.message}`);
+  }
+}
+
 module.exports = {
   summarizeEmail,
   categorizeEmail,
-  detectUnsubscribe
+  detectUnsubscribe,
+  matchCustomLabel
 };
 

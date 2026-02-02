@@ -259,6 +259,98 @@ html[data-theme="light"]::before {
     cursor: pointer;
 }
 
+.settingsSectionHint {
+    font-size: 12px;
+    color: var(--settings-text-muted);
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.settingTextarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--settings-input-bg);
+    border: 1px solid var(--settings-border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--settings-text);
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.settingTextarea:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.customLabelsList {
+    margin-bottom: 16px;
+}
+
+.customLabelCard {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: var(--settings-input-bg);
+    border: 1px solid var(--settings-border);
+    border-radius: 10px;
+}
+
+.customLabelCardBody {
+    flex: 1;
+    min-width: 0;
+}
+
+.customLabelCardName {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--settings-text);
+    margin-bottom: 4px;
+}
+
+.customLabelCardDescription {
+    font-size: 12px;
+    color: var(--settings-text-muted);
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.customLabelCardAddToGmail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.customLabelApplyLabel {
+    font-size: 12px;
+    color: var(--settings-text-muted);
+    cursor: pointer;
+    margin: 0;
+}
+
+.customLabelCardDelete {
+    flex-shrink: 0;
+}
+
+.customLabelForm {
+    margin-bottom: 12px;
+}
+
+.customLabelForm .settingItem {
+    margin-bottom: 10px;
+}
+
+.customLabelsActions {
+    margin-top: 8px;
+}
+
 .settingsSectionDeveloper {
     padding-top: 12px;
     border-top: 1px solid var(--settings-border);
@@ -447,6 +539,32 @@ html[data-theme="dark"] .successMessage { color: #bbf7d0; }
     background: var(--decluttr-surface);
     color: var(--decluttr-text);
     border-bottom: 2px solid var(--decluttr-accent);
+}
+
+.inboxTabAdd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 0;
+    margin-left: 4px;
+    background: var(--decluttr-surface);
+    border: 1px solid var(--decluttr-surface-border);
+    border-radius: 8px;
+    color: var(--decluttr-text-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.inboxTabAdd:hover {
+    background: var(--decluttr-input-bg);
+    color: var(--decluttr-text);
+    border-color: var(--decluttr-accent);
 }
 
 .emailListHeader {
@@ -1128,6 +1246,35 @@ html[data-theme="light"] .unsubscribeBadge { color: #9a3412; }
     background: var(--decluttr-surface);
     color: var(--decluttr-accent-hover);
     transform: rotate(90deg);
+}
+
+.addCustomLabelModalContent {
+    max-width: 420px;
+}
+
+.addCustomLabelModalTitle {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--decluttr-text);
+}
+
+.addCustomLabelModalHint {
+    font-size: 12px;
+    color: var(--settings-text-muted);
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+}
+
+.addCustomLabelModalContent .settingItem {
+    margin-bottom: 12px;
+}
+
+.addCustomLabelModalActions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 16px;
 }
 
 .modalHeader {

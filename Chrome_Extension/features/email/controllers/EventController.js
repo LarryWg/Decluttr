@@ -21,9 +21,12 @@ export class EventController {
         });
 
         // Settings
-        this.domRefs.settingsBtn.addEventListener('click', () => {
+        this.domRefs.settingsBtn.addEventListener('click', async () => {
             const isVisible = this.domRefs.settingsPanel.style.display !== 'none';
             this.domRefs.settingsPanel.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                await this.emailController.renderCustomLabelsList();
+            }
         });
 
         if (this.domRefs.themeSelect) {
@@ -80,8 +83,54 @@ export class EventController {
 
         if (this.domRefs.logoutBtn) {
             this.domRefs.logoutBtn.addEventListener('click', async () => {
-            await this.emailController.handleLogout();
-        });
+                await this.emailController.handleLogout();
+            });
+        }
+
+        // Custom auto-labels (add labels via + beside Pipeline only)
+        if (this.domRefs.applyCustomLabelsBtn) {
+            this.domRefs.applyCustomLabelsBtn.addEventListener('click', async () => {
+                await this.emailController.handleApplyCustomLabelsToInbox();
+            });
+        }
+        if (this.domRefs.customLabelsList) {
+            this.domRefs.customLabelsList.addEventListener('click', (e) => {
+                const btn = e.target.closest('.customLabelCardDelete');
+                if (btn && btn.dataset.labelId) {
+                    this.emailController.handleRemoveCustomLabel(btn.dataset.labelId);
+                }
+            });
+        }
+
+        // + button beside Pipeline: open Add Custom Label modal
+        if (this.domRefs.addCustomLabelTabBtn) {
+            this.domRefs.addCustomLabelTabBtn.addEventListener('click', () => {
+                this.emailController.openAddCustomLabelModal();
+            });
+        }
+        if (this.domRefs.addCustomLabelModal) {
+            this.domRefs.addCustomLabelModal.addEventListener('click', (e) => {
+                if (e.target === this.domRefs.addCustomLabelModal) {
+                    this.emailController.closeAddCustomLabelModal();
+                }
+            });
+        }
+        if (this.domRefs.closeAddCustomLabelModalBtn) {
+            this.domRefs.closeAddCustomLabelModalBtn.addEventListener('click', () => {
+                this.emailController.closeAddCustomLabelModal();
+            });
+        }
+        if (this.domRefs.cancelAddCustomLabelModalBtn) {
+            this.domRefs.cancelAddCustomLabelModalBtn.addEventListener('click', () => {
+                this.emailController.closeAddCustomLabelModal();
+            });
+        }
+        if (this.domRefs.confirmAddCustomLabelModalBtn) {
+            this.domRefs.confirmAddCustomLabelModalBtn.addEventListener('click', async () => {
+                const name = this.domRefs.addCustomLabelModalName?.value?.trim() ?? '';
+                const description = this.domRefs.addCustomLabelModalDescription?.value?.trim() ?? '';
+                await this.emailController.handleAddCustomLabel(name, description);
+            });
         }
 
         // Authentication

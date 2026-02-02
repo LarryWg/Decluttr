@@ -23,8 +23,9 @@ function normalizeStageLabel(label) {
 }
 
 /**
- * Build SankeyMATIC-format text from job emails as stage-to-stage flows (FromStage [count] ToStage).
- * Uses cached transitionFrom and transitionTo; falls back to jobType as transitionTo when no transition.
+ * Build SankeyMATIC-format text from job emails.
+ * Outputs: Applications Sent [total] -> each stage, so the diagram shows total applications branching out to OA, Interview, Rejected, etc.
+ * Each job email is counted once in its current stage (transitionTo or jobType).
  * @param {Array<Object>} jobEmails - List of job application emails
  * @param {Object} emailRepository - EmailRepository (getCachedResult)
  * @param {Object} emailParserService - EmailParserService (unused; kept for API compatibility)
@@ -35,42 +36,39 @@ export function buildSankeyMaticText(jobEmails, emailRepository, emailParserServ
         return '// No job application emails found';
     }
 
-    const flowCounts = new Map();
+    const SOURCE_LABEL = 'Applications Sent';
+    const NO_RESPONSE_LABEL = 'No Response';
+    const stageCounts = new Map();
 
     for (const email of jobEmails) {
         const cached = emailRepository.getCachedResult(email.id);
-        let fromStage = cached?.transitionFrom;
         let toStage = cached?.transitionTo;
 
         if (toStage == null && cached?.jobType != null) {
             toStage = JOB_TYPE_LABELS[cached.jobType] || cached.jobType;
-            if (fromStage == null) fromStage = 'Applications Sent';
         }
 
-        if (!toStage) continue;
-        fromStage = fromStage || 'Applications Sent';
-        let fromLabel = normalizeStageLabel(sanitizeNodeName(String(fromStage)));
-        let toLabel = normalizeStageLabel(sanitizeNodeName(String(toStage)));
-        if (!fromLabel || !toLabel) continue;
-
-        // Application submitted but no response yet: show as Applications Sent -> No Response
-        if (toLabel === 'Applications Sent') {
-            toLabel = 'No Response';
+        let toLabel;
+        if (toStage) {
+            toLabel = normalizeStageLabel(sanitizeNodeName(String(toStage)));
+            if (!toLabel) toLabel = NO_RESPONSE_LABEL;
+            // Emails still in "Applications Sent" (no response yet) show as No Response
+            if (toLabel === SOURCE_LABEL) toLabel = NO_RESPONSE_LABEL;
+        } else {
+            // No cached stage (e.g. Job by label/inboxCategory but not yet processed, or AI returned Job without stage)
+            toLabel = NO_RESPONSE_LABEL;
         }
 
-        const key = `${fromLabel}\t${toLabel}`;
-        flowCounts.set(key, (flowCounts.get(key) || 0) + 1);
+        stageCounts.set(toLabel, (stageCounts.get(toLabel) || 0) + 1);
     }
 
-    if (flowCounts.size === 0) {
-        return '// No stage transitions found';
+    if (stageCounts.size === 0) {
+        return '// No job emails to display';
     }
 
-    const entries = Array.from(flowCounts.entries()).map(([key, count]) => {
-        const [from, to] = key.split('\t');
-        return { from, to, count };
-    });
-    entries.sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to));
+    const entries = Array.from(stageCounts.entries())
+        .map(([stage, count]) => ({ from: SOURCE_LABEL, to: stage, count }))
+        .sort((a, b) => a.to.localeCompare(b.to));
 
     return entries.map(({ from, to, count }) => `${from} [${count}] ${to}`).join('\n');
 }

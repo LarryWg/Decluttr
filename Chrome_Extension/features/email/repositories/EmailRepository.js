@@ -13,6 +13,16 @@ export class EmailRepository {
         this._loadingMore = false;
         this.unsubscribedSenders = new Set();
         this.jobLabelId = null;
+        /** Custom auto-labels (id, name, description, gmailLabelId, applyToInbox) - used for filtering and tabs */
+        this.customLabels = [];
+    }
+
+    setCustomLabels(labels) {
+        this.customLabels = Array.isArray(labels) ? labels : [];
+    }
+
+    getCustomLabels() {
+        return this.customLabels;
     }
 
     // Email management
@@ -48,7 +58,22 @@ export class EmailRepository {
         if (this.selectedInbox === INBOX_CATEGORIES.JOB) {
             return this.currentEmails.filter((e) => this._isJobEmail(e));
         }
+        if (typeof this.selectedInbox === 'string' && this.selectedInbox.startsWith('custom:')) {
+            const labelId = this.selectedInbox.slice(7);
+            const label = this.customLabels.find((l) => l.id === labelId);
+            if (!label) return [];
+            return this.currentEmails.filter((e) => e.labelIds && Array.isArray(e.labelIds) && e.labelIds.includes(label.gmailLabelId));
+        }
         return this.currentEmails.filter((email) => email.inboxCategory === this.selectedInbox);
+    }
+
+    /**
+     * Returns true if this email is in the Job section (same logic as Job tab).
+     * @param {Object} email - Email object
+     * @returns {boolean}
+     */
+    isJobEmail(email) {
+        return email ? this._isJobEmail(email) : false;
     }
 
     /**

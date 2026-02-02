@@ -6,6 +6,7 @@ import {
     STORAGE_KEY_BACKEND_URL,
     STORAGE_KEY_THEME,
     STORAGE_KEY_AUTO_CATEGORIZE,
+    STORAGE_KEY_CUSTOM_LABELS,
     DEFAULT_THEME,
     DEFAULT_AUTO_CATEGORIZE
 } from '../config/constants.js';
@@ -110,6 +111,28 @@ export class SettingsService {
 
     async setAutoCategorize(enabled) {
         await chrome.storage.local.set({ [STORAGE_KEY_AUTO_CATEGORIZE]: !!enabled });
+    }
+
+    /**
+     * Get custom auto-labels from storage.
+     * Each item: { id: string, name: string, description: string, gmailLabelId: string }
+     * @returns {Promise<Array>}
+     */
+    async getCustomLabels() {
+        return new Promise((resolve) => {
+            chrome.storage.local.get([STORAGE_KEY_CUSTOM_LABELS], (result) => {
+                const list = result[STORAGE_KEY_CUSTOM_LABELS];
+                resolve(Array.isArray(list) ? list : []);
+            });
+        });
+    }
+
+    /**
+     * Save custom auto-labels to storage.
+     * @param {Array<{id: string, name: string, description: string, gmailLabelId: string}>} labels
+     */
+    async saveCustomLabels(labels) {
+        await chrome.storage.local.set({ [STORAGE_KEY_CUSTOM_LABELS]: labels });
     }
 }
 

@@ -88,6 +88,7 @@ class EmailController {
                 this.domRefs.emailListSection.style.display = 'block';
 
                 await this.ensureJobLabel();
+                await this.loadCustomLabelsIntoRepository();
 
                 const hadStoredData = await this.emailRepository.loadFromStorage();
                 if (hadStoredData) {
@@ -374,7 +375,7 @@ class EmailController {
             await Promise.all(batch.map(async (email) => {
                 const cachedResults = this.emailRepository.getCachedResult(email.id);
                 if (cachedResults) {
-                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cachedResults.category, cachedResults.jobType);
+                    email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cachedResults.category, cachedResults.jobType, cachedResults.hasUnsubscribe);
                     if (email.inboxCategory === INBOX_CATEGORIES.JOB) {
                         await this.applyJobLabelForEmail(email);
                     }
@@ -383,7 +384,7 @@ class EmailController {
                 try {
                     const results = await this.backendApiService.processEmailWithAI(email);
                     this.emailRepository.setCache(email.id, results);
-                    const mappedCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType);
+                    const mappedCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType, results.hasUnsubscribe);
                     email.inboxCategory = mappedCategory;
                     if (mappedCategory === INBOX_CATEGORIES.JOB) {
                         await this.applyJobLabelForEmail(email).catch(err => console.error(`Job label error for ${email.id}:`, err));
@@ -431,6 +432,272 @@ class EmailController {
         }
         if (labelResult.failed.length > 0) {
             console.warn(`Failed to add job label to ${email.id}:`, labelResult.failed[0].error);
+        }
+    }
+
+    /**
+     * Render the custom auto-labels list in settings (fetch from storage and populate DOM).
+     */
+    async renderCustomLabelsList() {
+        const listEl = this.domRefs.customLabelsList;
+        if (!listEl) return;
+        const labels = await this.settingsService.getCustomLabels();
+        listEl.innerHTML = '';
+        labels.forEach((label) => {
+            const applyToInbox = label.applyToInbox !== false;
+            const card = document.createElement('div');
+            card.className = 'customLabelCard';
+            card.dataset.labelId = label.id;
+            const body = document.createElement('div');
+            body.className = 'customLabelCardBody';
+            const nameEl = document.createElement('div');
+            nameEl.className = 'customLabelCardName';
+            nameEl.textContent = label.name;
+            const descEl = document.createElement('div');
+            descEl.className = 'customLabelCardDescription';
+            descEl.textContent = label.description || '';
+            body.appendChild(nameEl);
+            body.appendChild(descEl);
+            const addToGmailRow = document.createElement('div');
+            addToGmailRow.className = 'customLabelCardAddToGmail';
+            const addToGmailCheckbox = document.createElement('input');
+            addToGmailCheckbox.type = 'checkbox';
+            addToGmailCheckbox.id = `customLabelApply-${label.id}`;
+            addToGmailCheckbox.checked = applyToInbox;
+            addToGmailCheckbox.className = 'settingCheckbox customLabelApplyCheckbox';
+            addToGmailCheckbox.dataset.labelId = label.id;
+            const addToGmailLabel = document.createElement('label');
+            addToGmailLabel.htmlFor = addToGmailCheckbox.id;
+            addToGmailLabel.className = 'customLabelApplyLabel';
+            addToGmailLabel.textContent = 'Add to Gmail when applying labels';
+            addToGmailRow.appendChild(addToGmailCheckbox);
+            addToGmailRow.appendChild(addToGmailLabel);
+            body.appendChild(addToGmailRow);
+            card.appendChild(body);
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'button small customLabelCardDelete';
+            deleteBtn.textContent = 'Remove';
+            deleteBtn.setAttribute('aria-label', `Remove label ${label.name}`);
+            deleteBtn.dataset.labelId = label.id;
+            card.appendChild(deleteBtn);
+            listEl.appendChild(card);
+            addToGmailCheckbox.addEventListener('change', (e) => this.handleCustomLabelApplyToInboxChange(label.id, e.target.checked));
+        });
+    }
+
+    /**
+     * Persist "Add to Gmail" checkbox change for a custom label.
+     * @param {string} labelId
+     * @param {boolean} applyToInbox
+     */
+    async handleCustomLabelApplyToInboxChange(labelId, applyToInbox) {
+        const labels = await this.settingsService.getCustomLabels();
+        const updated = labels.map((l) => (l.id === labelId ? { ...l, applyToInbox } : l));
+        await this.settingsService.saveCustomLabels(updated);
+    }
+
+    /**
+     * Add a new custom auto-label: create in Gmail, save to storage, re-render list.
+     * When called from the + modal, pass name and description; otherwise read from settings form.
+     * @param {string} [name] - Optional; if provided with description, use these (e.g. from modal).
+     * @param {string} [description] - Optional.
+     */
+    async handleAddCustomLabel(name, description) {
+        const fromModal = typeof name === 'string' && typeof description === 'string';
+        const nameInput = fromModal ? null : this.domRefs.customLabelNameInput;
+        const descInput = fromModal ? null : this.domRefs.customLabelDescriptionInput;
+        const finalName = fromModal ? name.trim() : (nameInput?.value ?? '').trim();
+        const finalDesc = fromModal ? description.trim() : (descInput?.value ?? '').trim();
+        if (!finalName) {
+            this.uiController.showError('Please enter a label name');
+            return;
+        }
+        if (!finalDesc) {
+            this.uiController.showError('Please describe what kind of emails should get this label');
+            return;
+        }
+        try {
+            this.uiController.hideError();
+            this.uiController.showLoading('Creating label in Gmail...');
+            const gmailLabelId = await this.gmailApiService.getOrCreateCustomLabel(finalName);
+            const labels = await this.settingsService.getCustomLabels();
+            const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+            labels.push({ id, name: finalName, description: finalDesc, gmailLabelId, applyToInbox: false });
+            await this.settingsService.saveCustomLabels(labels);
+            if (!fromModal && nameInput) nameInput.value = '';
+            if (!fromModal && descInput) descInput.value = '';
+            await this.renderCustomLabelsList();
+            await this.loadCustomLabelsIntoRepository();
+            this.uiController.updateInboxTabsUI();
+            this.uiController.hideLoading();
+            if (fromModal) {
+                this.closeAddCustomLabelModal();
+                this.uiController.showLoading('Applying label to matching emails...');
+                const labeled = await this.applySingleCustomLabelToInbox({ id, name: finalName, description: finalDesc, gmailLabelId });
+                this.uiController.hideLoading();
+                if (labeled > 0) {
+                    this.emailRepository.setSelectedInbox(`custom:${id}`);
+                    this.uiController.updateInboxTabsUI();
+                    this.uiController.showEmailListView();
+                    this.uiController.renderEmailList();
+                }
+                this.uiController.showSuccess(`Label "${finalName}" created and applied to matching emails. Use Settings to toggle "Add to Gmail" for future runs.`);
+            } else {
+                this.uiController.showSuccess(`Label "${finalName}" created. Use "Apply labels to inbox" in Settings to run AI matching.`);
+            }
+            setTimeout(() => this.uiController.hideSuccess(), 3000);
+        } catch (err) {
+            this.uiController.hideLoading();
+            this.uiController.showError(err.message || 'Failed to add label');
+        }
+    }
+
+    /**
+     * Run AI matching for one custom label on current inbox emails and add Gmail label to matching ones.
+     * If inbox is empty, fetches emails first.
+     * @param {Object} label - { id, name, description, gmailLabelId }
+     */
+    async applySingleCustomLabelToInbox(label) {
+        let emails = this.emailRepository.getEmails();
+        if (emails.length === 0) {
+            this.uiController.showLoading('Loading emails to apply label...');
+            try {
+                const result = await this.gmailApiService.fetchEmailList();
+                this.emailRepository.setEmails(result.emails);
+                this.emailRepository.setNextPageToken(result.nextPageToken);
+                emails = result.emails;
+            } finally {
+                this.uiController.hideLoading();
+            }
+            if (emails.length === 0) {
+                this.uiController.showError('No emails in inbox. Refresh your inbox first.');
+                return;
+            }
+        }
+        const delayMs = 350;
+        let labeled = 0;
+        for (const email of emails) {
+            if (this.emailRepository.isJobEmail(email)) continue;
+            const hasLabel = email.labelIds && email.labelIds.includes(label.gmailLabelId);
+            if (hasLabel) continue;
+            await this.ensureEmailFullContent(email);
+            const content = email.fullContent || (email.subject || '') + '\n' + (email.snippet || '');
+            if (!content.trim()) continue;
+            try {
+                const { match } = await this.backendApiService.matchCustomLabel(content, label.name, label.description);
+                if (match) {
+                    const result = await this.gmailApiService.addLabelToMessages([email.id], label.gmailLabelId);
+                    if (result.success && result.success.length > 0) {
+                        email.labelIds = [...(email.labelIds || []), label.gmailLabelId];
+                        labeled++;
+                    }
+                }
+            } catch (err) {
+                console.warn(`Custom label "${label.name}" match failed for ${email.id}:`, err);
+            }
+            await new Promise((r) => setTimeout(r, delayMs));
+        }
+        await this.emailRepository.saveToStorage();
+        if (labeled === 0 && emails.length > 0) {
+            this.uiController.showSuccess(`Label "${label.name}" created. No matching emails in current inbox.`);
+            setTimeout(() => this.uiController.hideSuccess(), 3000);
+        }
+        return labeled;
+    }
+
+    /** Show the Add Custom Label modal (opened by + beside Pipeline). */
+    openAddCustomLabelModal() {
+        const modal = this.domRefs.addCustomLabelModal;
+        const nameInput = this.domRefs.addCustomLabelModalName;
+        const descInput = this.domRefs.addCustomLabelModalDescription;
+        if (modal) modal.style.display = 'flex';
+        if (nameInput) nameInput.value = '';
+        if (descInput) descInput.value = '';
+    }
+
+    /** Close the Add Custom Label modal and clear inputs. */
+    closeAddCustomLabelModal() {
+        const modal = this.domRefs.addCustomLabelModal;
+        const nameInput = this.domRefs.addCustomLabelModalName;
+        const descInput = this.domRefs.addCustomLabelModalDescription;
+        if (modal) modal.style.display = 'none';
+        if (nameInput) nameInput.value = '';
+        if (descInput) descInput.value = '';
+    }
+
+    /**
+     * Remove a custom auto-label from storage (Gmail label is left as-is; we just stop applying it).
+     * @param {string} labelId - Our internal label id
+     */
+    async handleRemoveCustomLabel(labelId) {
+        const labels = await this.settingsService.getCustomLabels();
+        const filtered = labels.filter((l) => l.id !== labelId);
+            await this.settingsService.saveCustomLabels(filtered);
+            await this.loadCustomLabelsIntoRepository();
+            await this.renderCustomLabelsList();
+            this.uiController.updateInboxTabsUI();
+            this.uiController.showSuccess('Label removed');
+            setTimeout(() => this.uiController.hideSuccess(), 2000);
+    }
+
+    /** Load custom labels from settings into repository and refresh custom-label tabs. */
+    async loadCustomLabelsIntoRepository() {
+        const labels = await this.settingsService.getCustomLabels();
+        this.emailRepository.setCustomLabels(labels);
+    }
+
+    /**
+     * For each custom label, run AI match on current inbox emails and add Gmail label to matching ones.
+     */
+    async handleApplyCustomLabelsToInbox() {
+        const labels = await this.settingsService.getCustomLabels();
+        if (labels.length === 0) {
+            this.uiController.showError('Add at least one custom label first');
+            return;
+        }
+        const emails = this.emailRepository.getEmails();
+        if (emails.length === 0) {
+            this.uiController.showError('No emails in inbox. Refresh to load emails first.');
+            return;
+        }
+        try {
+            this.uiController.hideError();
+            this.uiController.showLoading('Applying custom labels...');
+            let processed = 0;
+            let labeled = 0;
+            const delayMs = 350;
+            for (const email of emails) {
+                if (this.emailRepository.isJobEmail(email)) continue;
+                await this.ensureEmailFullContent(email);
+                const content = email.fullContent || (email.subject || '') + '\n' + (email.snippet || '');
+                if (!content.trim()) continue;
+                for (const label of labels) {
+                    const applyToGmail = label.applyToInbox !== false;
+                    const hasLabel = email.labelIds && email.labelIds.includes(label.gmailLabelId);
+                    if (hasLabel) continue;
+                    try {
+                        const { match } = await this.backendApiService.matchCustomLabel(content, label.name, label.description);
+                        if (match && applyToGmail) {
+                            const result = await this.gmailApiService.addLabelToMessages([email.id], label.gmailLabelId);
+                            if (result.success.length > 0) {
+                                email.labelIds = [...(email.labelIds || []), label.gmailLabelId];
+                                labeled++;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`Custom label "${label.name}" match failed for ${email.id}:`, err);
+                    }
+                    await new Promise((r) => setTimeout(r, delayMs));
+                }
+                processed++;
+            }
+            this.uiController.hideLoading();
+            this.uiController.showSuccess(`Done. Processed ${processed} emails; applied labels ${labeled} time(s).`);
+            setTimeout(() => this.uiController.hideSuccess(), 4000);
+        } catch (err) {
+            this.uiController.hideLoading();
+            this.uiController.showError(err.message || 'Failed to apply labels');
         }
     }
 

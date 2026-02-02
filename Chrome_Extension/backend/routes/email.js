@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { summarizeEmail, categorizeEmail, detectUnsubscribe } = require('../utils/openai');
+const { summarizeEmail, categorizeEmail, detectUnsubscribe, matchCustomLabel } = require('../utils/openai');
 
 // Get OpenAI API key from environment (server-side)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -93,6 +93,39 @@ router.post('/detect-unsubscribe', async (req, res, next) => {
 
     // API key is optional for unsubscribe detection (uses pattern matching primarily)
     const result = await detectUnsubscribe(emailContent, OPENAI_API_KEY || '');
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/email/match-custom-label
+ * Check if an email matches a user-defined label (name + description)
+ * Body: { emailContent: string, labelName: string, labelDescription: string }
+ * Returns: { match: boolean }
+ */
+router.post('/match-custom-label', async (req, res, next) => {
+  try {
+    const { emailContent, labelName, labelDescription } = req.body;
+
+    if (!emailContent || typeof emailContent !== 'string' || emailContent.trim().length === 0) {
+      return res.status(400).json({ error: 'emailContent is required and must be a non-empty string' });
+    }
+    if (!labelName || typeof labelName !== 'string' || !labelName.trim()) {
+      return res.status(400).json({ error: 'labelName is required' });
+    }
+    if (!labelDescription || typeof labelDescription !== 'string' || !labelDescription.trim()) {
+      return res.status(400).json({ error: 'labelDescription is required' });
+    }
+
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: 'OpenAI API key not configured on server. Please set OPENAI_API_KEY environment variable.'
+      });
+    }
+
+    const result = await matchCustomLabel(emailContent, labelName.trim(), labelDescription.trim(), OPENAI_API_KEY);
     res.json(result);
   } catch (error) {
     next(error);

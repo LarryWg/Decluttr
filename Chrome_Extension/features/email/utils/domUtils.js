@@ -54,6 +54,18 @@ export class DOMReferences {
         this.sankeyOpenBtn = document.getElementById('sankeyOpenBtn');
         this.sankeyExportBtn = document.getElementById('sankeyExportBtn');
         this.sankeyRefreshBtn = document.getElementById('sankeyRefreshBtn');
+        this.customLabelsList = document.getElementById('customLabelsList');
+        this.customLabelNameInput = document.getElementById('customLabelNameInput');
+        this.customLabelDescriptionInput = document.getElementById('customLabelDescriptionInput');
+        this.addCustomLabelBtn = document.getElementById('addCustomLabelBtn');
+        this.applyCustomLabelsBtn = document.getElementById('applyCustomLabelsBtn');
+        this.addCustomLabelTabBtn = document.getElementById('addCustomLabelTabBtn');
+        this.addCustomLabelModal = document.getElementById('addCustomLabelModal');
+        this.closeAddCustomLabelModalBtn = document.getElementById('closeAddCustomLabelModalBtn');
+        this.addCustomLabelModalName = document.getElementById('addCustomLabelModalName');
+        this.addCustomLabelModalDescription = document.getElementById('addCustomLabelModalDescription');
+        this.cancelAddCustomLabelModalBtn = document.getElementById('cancelAddCustomLabelModalBtn');
+        this.confirmAddCustomLabelModalBtn = document.getElementById('confirmAddCustomLabelModalBtn');
     }
 }
 
