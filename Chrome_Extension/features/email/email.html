@@ -99,12 +99,30 @@
                 <button class="inboxTab active" data-inbox="primary">Primary</button>
                 <button class="inboxTab" data-inbox="promotions">Promotions</button>
                 <button class="inboxTab" data-inbox="job">Job</button>
+                <button class="inboxTab" data-inbox="pipeline">Pipeline</button>
             </div>
             <button class="button small" id="managePromotionsBtn" style="display: none; width: 100%; margin-bottom: 12px;">Manage Promotions</button>
             <div class="emailList" id="emailList">
                 <!-- Email cards will be inserted here -->
             </div>
             <button class="button small" id="loadMoreBtn" style="display: none; width: 100%; margin-top: 12px;">Load More</button>
+            <div class="sankeySection" id="sankeySection" style="display: none;">
+                <p class="sankeySectionDesc">Job application pipeline – edit below and copy or open in SankeyMATIC.</p>
+                <div class="sankeyViewToggle" role="tablist" aria-label="Pipeline view">
+                    <button type="button" class="sankeyViewToggleBtn active" id="sankeyCodeViewBtn" role="tab" aria-selected="true" data-view="code">Code</button>
+                    <button type="button" class="sankeyViewToggleBtn" id="sankeyDiagramViewBtn" role="tab" aria-selected="false" data-view="diagram">Diagram</button>
+                </div>
+                <div id="sankeyCodeView" class="sankeyCodeView">
+                    <textarea id="sankeyTextarea" class="sankeyTextarea" rows="12" placeholder="Company [count] Stage"></textarea>
+                    <div class="sankeyActions">
+                        <button type="button" class="button small" id="sankeyCopyBtn">Copy to clipboard</button>
+                        <a href="https://sankeymatic.com/" target="_blank" rel="noopener noreferrer" class="button small" id="sankeyOpenBtn">Open in SankeyMATIC</a>
+                        <button type="button" class="button small" id="sankeyExportBtn">Export as .txt</button>
+                        <button type="button" class="button small" id="sankeyRefreshBtn">Refresh</button>
+                    </div>
+                </div>
+                <div id="sankeyDiagramContainer" class="sankeyDiagramContainer" role="tabpanel" aria-hidden="true"></div>
+            </div>
         </div>
 
         <!-- Empty State -->
@@ -156,6 +174,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="lib/d3.min.js"></script>
+    <script src="lib/d3-sankey.min.js"></script>
     <script src="gmail-auth.js"></script>
     <script type="module" src="email.js"></script>
 </body>

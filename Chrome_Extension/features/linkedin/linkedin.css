@@ -49,37 +49,29 @@ html[data-theme="light"] body::before {
     overflow-y: auto;
 }
 
-<<<<<<< HEAD
 .container h2 {
-    color: var(--decluttr-text);
-}
-
-=======
-h2 {
     margin: 0 0 20px 0;
-    color: rgba(255, 255, 255, 0.98);
+    color: var(--decluttr-text);
     text-align: center;
     font-size: 22px;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-h3 {
+.container h3 {
     margin: 20px 0 10px 0;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--decluttr-text);
     font-size: 16px;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Search Section */
 .search-section {
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid var(--decluttr-card-border);
 }
 
 .search-hint {
     font-size: 11px;
-    color: rgba(79, 70, 229, 0.8);
+    color: var(--decluttr-text-muted);
     margin: 8px 0 0 0;
     line-height: 1.4;
 }
@@ -90,9 +82,14 @@ h3 {
     padding: 30px 20px;
 }
 
+.loading-indicator p {
+    color: var(--decluttr-text);
+    font-size: 14px;
+}
+
 .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid rgba(255, 255, 255, 0.9);
+    border: 4px solid var(--decluttr-surface-border);
+    border-top-color: var(--decluttr-accent);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -103,11 +100,6 @@ h3 {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-.loading-indicator p {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 14px;
 }
 
 /* Search Results */
@@ -123,10 +115,10 @@ h3 {
 
 /* Profile Card */
 .profile-card {
-    background: rgba(255, 255, 255, 0.35);
+    background: var(--decluttr-card-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--decluttr-card-border);
     border-radius: 12px;
     padding: 14px;
     margin-bottom: 10px;
@@ -135,15 +127,15 @@ h3 {
 }
 
 .profile-card:hover {
-    background: rgba(255, 255, 255, 0.45);
+    background: var(--decluttr-input-bg);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.3);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
 }
 
 .profile-card.selected {
-    background: rgba(102, 126, 234, 0.3);
-    border-color: rgba(102, 126, 234, 0.7);
-    box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.4);
+    background: var(--decluttr-input-bg);
+    border-color: var(--decluttr-accent);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
 }
 
 .profile-header {
@@ -155,14 +147,14 @@ h3 {
 
 .profile-header h4 {
     margin: 0;
-    color: #1e1b4b;
+    color: var(--decluttr-text);
     font-size: 15px;
     font-weight: 600;
 }
 
 .profile-badge {
-    background: rgba(79, 70, 229, 0.2);
-    color: #4f46e5;
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--decluttr-accent);
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 11px;
@@ -170,7 +162,7 @@ h3 {
 }
 
 .profile-title {
-    color: #4f46e5;
+    color: var(--decluttr-accent);
     font-size: 13px;
     font-weight: 500;
     margin: 4px 0;
@@ -178,7 +170,7 @@ h3 {
 
 .profile-company,
 .profile-location {
-    color: rgba(0, 0, 0, 0.7);
+    color: var(--decluttr-text-muted);
     font-size: 12px;
     margin: 2px 0;
 }
@@ -202,11 +194,10 @@ h3 {
 .manual-section {
     margin: 20px 0;
     padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: 1px solid var(--decluttr-card-border);
 }
 
 /* Form Elements */
->>>>>>> linkedin-ai-feature
 input, textarea {
     width: 100%;
     padding: 10px;
@@ -289,17 +280,17 @@ textarea {
 
 .profiles-list::-webkit-scrollbar-track,
 .container::-webkit-scrollbar-track {
-    background: rgba(102, 126, 234, 0.1);
+    background: var(--decluttr-surface-border);
     border-radius: 4px;
 }
 
 .profiles-list::-webkit-scrollbar-thumb,
 .container::-webkit-scrollbar-thumb {
-    background: rgba(102, 126, 234, 0.3);
+    background: var(--decluttr-text-muted);
     border-radius: 4px;
 }
 
 .profiles-list::-webkit-scrollbar-thumb:hover,
 .container::-webkit-scrollbar-thumb:hover {
-    background: rgba(102, 126, 234, 0.5);
+    background: var(--decluttr-accent);
 }

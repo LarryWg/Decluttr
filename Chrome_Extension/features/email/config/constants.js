@@ -20,17 +20,43 @@ export const INBOX_CATEGORIES = {
 export const STORAGE_KEY_JOB_LABEL_ID = 'gmail_job_label_id';
 export const JOB_LABEL_NAME = 'Decluttr/Job';
 
-// Job application stages (backend jobType values)
-export const VALID_JOB_TYPES = ['application_confirmation', 'interview', 'rejection', 'offer'];
+// Job application pipeline stages (backend jobType / transition slugs)
+// New 8-stage transition model + legacy 4 for backward compatibility
+export const VALID_JOB_TYPES = [
+    'applications_sent',
+    'oa_screening',
+    'interview',
+    'offer',
+    'accepted',
+    'rejected',
+    'no_response',
+    'declined',
+    'application_confirmation',
+    'rejection'
+];
 
 /** Display labels for job stage (user-facing wording) */
 export const JOB_TYPE_LABELS = {
-    application_confirmation: 'Application submitted',
+    applications_sent: 'Applications Sent',
+    oa_screening: 'OA / Screening',
     interview: 'Interview',
-    rejection: 'Rejected',
-    offer: 'Accepted'
+    offer: 'Offer',
+    accepted: 'Accepted',
+    rejected: 'Rejected',
+    no_response: 'No Response',
+    declined: 'Declined',
+    application_confirmation: 'Applications Sent',
+    rejection: 'Rejected'
 };
 
 export const DEFAULT_INBOX = INBOX_CATEGORIES.PRIMARY;
 export const STORAGE_KEY_UNSUBSCRIBED = 'unsubscribed_senders';
+
+// Persisted email list and AI cache (survive extension close)
+export const STORAGE_KEY_EMAILS = 'decluttr_emails';
+export const STORAGE_KEY_EMAIL_CACHE = 'decluttr_email_cache';
+export const STORAGE_KEY_NEXT_PAGE_TOKEN = 'decluttr_next_page_token';
+export const STORAGE_KEY_SELECTED_INBOX = 'decluttr_selected_inbox';
+
+export const STORAGE_KEY_SANKEY_EMBEDDED = 'decluttr_sankey_embedded';
 

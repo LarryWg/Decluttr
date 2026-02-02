@@ -13,6 +13,7 @@ import { UnsubscribeService } from './services/UnsubscribeService.js';
 import { SettingsService } from './services/SettingsService.js';
 import { UIController } from './controllers/UIController.js';
 import { EventController } from './controllers/EventController.js';
+import { buildSankeyMaticText } from './services/SankeyPipelineService.js';
 import { DEFAULT_INBOX, INBOX_CATEGORIES } from './config/constants.js';
 
 /**
@@ -44,7 +45,8 @@ class EmailController {
             this.emailClassificationService,
             this.backendApiService,
             this.unsubscribeService,
-            (email) => this.applyJobLabelForEmail(email)
+            (email) => this.applyJobLabelForEmail(email),
+            (email) => this.ensureEmailFullContent(email)
         );
         
         this.eventController = new EventController(
@@ -71,26 +73,34 @@ class EmailController {
     }
 
     /**
-     * Check authentication and initialize UI
+     * Check authentication and initialize UI.
+     * Loads from storage first; if we have stored emails, show them immediately then incremental fetch (new only).
      */
     async checkAuthAndInit() {
         try {
             const isAuth = await isAuthenticated();
             if (isAuth) {
-                // Load account email
-                const email = await getStoredAccountEmail();
-                if (email) {
-                    this.domRefs.accountEmailSpan.textContent = email;
+                const accountEmail = await getStoredAccountEmail();
+                if (accountEmail) {
+                    this.domRefs.accountEmailSpan.textContent = accountEmail;
                 }
-                
-                // Hide auth section, show email list section
                 this.domRefs.authSection.style.display = 'none';
                 this.domRefs.emailListSection.style.display = 'block';
-                
-                // Fetch emails
+
+                await this.ensureJobLabel();
+
+                const hadStoredData = await this.emailRepository.loadFromStorage();
+                if (hadStoredData) {
+                    this.uiController.updateInboxTabsUI();
+                    this.uiController.updateManagePromotionsButton();
+                    this.uiController.renderEmailList();
+                    this.uiController.updateLoadMoreButton();
+                    this.uiController.hideLoading();
+                    this.runIncrementalFetch();
+                    return;
+                }
                 await this.fetchAndDisplayEmails();
             } else {
-                // Show auth section
                 this.domRefs.authSection.style.display = 'block';
                 this.domRefs.emailListSection.style.display = 'none';
             }
@@ -98,6 +108,54 @@ class EmailController {
             console.error('Auth check error:', error);
             this.uiController.showError('Failed to check authentication status');
         }
+    }
+
+    /**
+     * Fetch first page of message IDs, get only new emails, categorize new only, merge, save.
+     */
+    async runIncrementalFetch() {
+        try {
+            const { messageIds, nextPageToken } = await this.gmailApiService.fetchMessageIds();
+            const existingIds = new Set(this.emailRepository.getEmails().map((e) => e.id));
+            const newIds = messageIds.filter((id) => !existingIds.has(id));
+            if (newIds.length === 0) {
+                this.emailRepository.setNextPageToken(nextPageToken);
+                await this.emailRepository.saveToStorage();
+                return;
+            }
+            const newEmails = await this.gmailApiService.fetchEmailsByIds(newIds);
+            const existing = this.emailRepository.getEmails();
+            this.emailRepository.setEmails([...newEmails, ...existing]);
+            this.emailRepository.setNextPageToken(nextPageToken);
+            const autoCategorize = await this.settingsService.getAutoCategorize();
+            if (autoCategorize && newEmails.length > 0) {
+                this.uiController.showLoading('Categorizing new emails...');
+                await this.autoCategorizeEmails(newEmails);
+                this.uiController.hideLoading();
+            }
+            await this.emailRepository.saveToStorage();
+            this.uiController.renderEmailList();
+            this.uiController.updateLoadMoreButton();
+        } catch (error) {
+            console.error('Incremental fetch error:', error);
+            if (!error.message.includes('Not authenticated') && !error.message.includes('401')) {
+                this.uiController.showError('Failed to fetch new emails: ' + error.message);
+            }
+        }
+    }
+
+    /**
+     * Ensure email has body and fullContent (fetch from Gmail if missing, e.g. after load from storage).
+     * @param {Object} email - Email object (may be minimal)
+     * @returns {Promise<void>}
+     */
+    async ensureEmailFullContent(email) {
+        if (email.body != null && email.body !== '' && email.fullContent != null && email.fullContent !== '') {
+            return;
+        }
+        const full = await this.gmailApiService.fetchEmailDetailsById(email.id);
+        email.body = full.body || '';
+        email.fullContent = full.fullContent || '';
     }
 
     /**
@@ -215,10 +273,9 @@ class EmailController {
             
             // Render filtered emails
             this.uiController.renderEmailList();
-            
-            // Update load more button visibility
             this.uiController.updateLoadMoreButton();
 
+            await this.emailRepository.saveToStorage();
         } catch (error) {
             this.uiController.hideLoading();
             console.error('Fetch emails error:', error);
@@ -264,12 +321,9 @@ class EmailController {
                 await this.autoCategorizeEmails(newEmails);
             }
             
-            // Re-render to show new emails
             this.uiController.renderEmailList();
-            
-            // Update load more button visibility
             this.uiController.updateLoadMoreButton();
-            
+            await this.emailRepository.saveToStorage();
         } catch (error) {
             console.error('Load more emails error:', error);
             this.uiController.showError('Failed to load more emails: ' + error.message);
@@ -313,9 +367,10 @@ class EmailController {
      * @param {Array} emails - Array of emails to categorize
      */
     async autoCategorizeEmails(emails) {
-        const batchSize = 15;
-        for (let i = 0; i < emails.length; i += batchSize) {
-            const batch = emails.slice(i, i + batchSize);
+        const concurrency = 3;
+        const delayMs = 400;
+        for (let i = 0; i < emails.length; i += concurrency) {
+            const batch = emails.slice(i, i + concurrency);
             await Promise.all(batch.map(async (email) => {
                 const cachedResults = this.emailRepository.getCachedResult(email.id);
                 if (cachedResults) {
@@ -337,11 +392,24 @@ class EmailController {
                     console.error(`Failed to auto-categorize email ${email.id}:`, error);
                 }
             }));
-            if (i + batchSize < emails.length) {
-                await new Promise((resolve) => setTimeout(resolve, 500));
+            if (i + concurrency < emails.length) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
         }
         this.uiController.renderEmailList();
+    }
+
+    /**
+     * Ensure the Gmail "Decluttr/Job" label exists (create if missing or deleted).
+     * Called when the email list loads so the label is recreated after cache clear or user deletion.
+     */
+    async ensureJobLabel() {
+        try {
+            const labelId = await this.gmailApiService.getOrCreateJobLabel();
+            this.emailRepository.setJobLabelId(labelId);
+        } catch (err) {
+            console.warn('Could not ensure Decluttr/Job label:', err);
+        }
     }
 
     /**
@@ -368,15 +436,36 @@ class EmailController {
 
     /**
      * Switch to a different inbox view
-     * @param {string} newInbox - New inbox category to switch to
+     * @param {string} newInbox - New inbox category to switch to (primary, promotions, job, pipeline)
      */
     switchInbox(newInbox) {
         if (newInbox === this.emailRepository.getSelectedInbox()) return;
-        
+
         this.emailRepository.setSelectedInbox(newInbox);
         this.uiController.updateInboxTabsUI();
-        this.uiController.updateManagePromotionsButton();
-        this.uiController.renderEmailList();
+
+        if (newInbox === 'pipeline') {
+            const jobEmails = this.emailRepository.getJobEmails();
+            const sankeyText = buildSankeyMaticText(jobEmails, this.emailRepository, this.emailParserService);
+            this.uiController.showPipelineView(sankeyText);
+        } else {
+            this.uiController.showEmailListView();
+            this.uiController.updateManagePromotionsButton();
+            this.uiController.renderEmailList();
+        }
+    }
+
+    /**
+     * Refresh the Pipeline view text from current job emails (e.g. after user clicks Refresh).
+     */
+    refreshPipelineView() {
+        if (this.emailRepository.getSelectedInbox() !== 'pipeline') return;
+        const jobEmails = this.emailRepository.getJobEmails();
+        const sankeyText = buildSankeyMaticText(jobEmails, this.emailRepository, this.emailParserService);
+        this.uiController.setPipelineContent(sankeyText);
+        if (this.domRefs.sankeyDiagramContainer?.style.display === 'block') {
+            this.uiController.showPipelineDiagramView();
+        }
     }
 
     /**

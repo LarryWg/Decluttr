@@ -44,6 +44,16 @@ export class DOMReferences {
         this.cancelUnsubscribeBtn = document.getElementById('cancelUnsubscribeBtn');
         this.confirmUnsubscribeBtn = document.getElementById('confirmUnsubscribeBtn');
         this.openInGmailBtn = document.getElementById('openInGmailBtn');
+        this.sankeySection = document.getElementById('sankeySection');
+        this.sankeyCodeViewBtn = document.getElementById('sankeyCodeViewBtn');
+        this.sankeyDiagramViewBtn = document.getElementById('sankeyDiagramViewBtn');
+        this.sankeyCodeView = document.getElementById('sankeyCodeView');
+        this.sankeyDiagramContainer = document.getElementById('sankeyDiagramContainer');
+        this.sankeyTextarea = document.getElementById('sankeyTextarea');
+        this.sankeyCopyBtn = document.getElementById('sankeyCopyBtn');
+        this.sankeyOpenBtn = document.getElementById('sankeyOpenBtn');
+        this.sankeyExportBtn = document.getElementById('sankeyExportBtn');
+        this.sankeyRefreshBtn = document.getElementById('sankeyRefreshBtn');
     }
 }
 

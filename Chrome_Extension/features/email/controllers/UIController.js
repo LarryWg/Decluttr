@@ -6,13 +6,14 @@ import { escapeHtml, convertUrlsToLinks } from '../utils/textUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 
 export class UIController {
-    constructor(domRefs, emailRepository, emailClassificationService, backendApiService, unsubscribeService, onJobEmailClassified = null) {
+    constructor(domRefs, emailRepository, emailClassificationService, backendApiService, unsubscribeService, onJobEmailClassified = null, onBeforeShowEmailModal = null) {
         this.domRefs = domRefs;
         this.emailRepository = emailRepository;
         this.emailClassificationService = emailClassificationService;
         this.backendApiService = backendApiService;
         this.unsubscribeService = unsubscribeService;
         this.onJobEmailClassified = onJobEmailClassified;
+        this.onBeforeShowEmailModal = onBeforeShowEmailModal;
     }
 
     /**
@@ -77,7 +78,7 @@ export class UIController {
         const jobType = cachedResults ? cachedResults.jobType : null;
         const hasUnsubscribe = cachedResults ? cachedResults.hasUnsubscribe : false;
         const isJobApplication = category === 'Job' || email.inboxCategory === INBOX_CATEGORIES.JOB || (jobType && VALID_JOB_TYPES.includes(jobType));
-        const jobStageLabel = isJobApplication && jobType && JOB_TYPE_LABELS[jobType] ? JOB_TYPE_LABELS[jobType] : (isJobApplication ? 'Job application' : null);
+        const jobStageLabel = isJobApplication && jobType && JOB_TYPE_LABELS[jobType] ? JOB_TYPE_LABELS[jobType] : (isJobApplication ? 'Applications Sent' : null);
 
         // Format date (relative time)
         const dateStr = formatDate(email.date);
@@ -109,9 +110,9 @@ export class UIController {
             await this.handleProcessEmail(email, card);
         });
 
-        viewBtn.addEventListener('click', (e) => {
+        viewBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            this.showEmailModal(email);
+            await this.showEmailModal(email);
         });
 
         return card;
@@ -218,11 +219,11 @@ export class UIController {
             badgesContainer.appendChild(categoryBadge);
         }
 
-        // Add Job application / stage badge (Application submitted, Interview, Accepted, Rejected, or generic Job application)
+        // Add job stage badge (Applications Sent, Interview, Accepted, Rejected, etc.)
         if (isJobResult) {
             const jobBadge = document.createElement('span');
             jobBadge.className = 'jobApplicationBadge';
-            jobBadge.textContent = results.jobType && JOB_TYPE_LABELS[results.jobType] ? JOB_TYPE_LABELS[results.jobType] : 'Job application';
+            jobBadge.textContent = results.jobType && JOB_TYPE_LABELS[results.jobType] ? JOB_TYPE_LABELS[results.jobType] : 'Applications Sent';
             badgesContainer.appendChild(jobBadge);
         }
 
@@ -251,22 +252,24 @@ export class UIController {
     }
 
     /**
-     * Show email detail modal
+     * Show email detail modal. If onBeforeShowEmailModal is set, awaits it first (e.g. fetch body when loaded from storage).
      * @param {Object} email - Email object
      */
-    showEmailModal(email) {
+    async showEmailModal(email) {
+        if (typeof this.onBeforeShowEmailModal === 'function') {
+            await this.onBeforeShowEmailModal(email);
+        }
         this.domRefs.modalSubject.textContent = email.subject;
         this.domRefs.modalSender.textContent = `From: ${email.from}`;
         this.domRefs.modalDate.textContent = `Date: ${formatDate(email.date)}`;
-        // Convert URLs to clickable links with domain names
-        this.domRefs.modalBodyContent.innerHTML = convertUrlsToLinks(email.body);
+        this.domRefs.modalBodyContent.innerHTML = convertUrlsToLinks(email.body || '');
 
         // Check for cached AI results
         const cachedResults = this.emailRepository.getCachedResult(email.id);
         
         if (cachedResults) {
             const isJobCached = cachedResults.category === 'Job' || (cachedResults.jobType && VALID_JOB_TYPES.includes(cachedResults.jobType));
-            const jobStageLabel = isJobCached && cachedResults.jobType && JOB_TYPE_LABELS[cachedResults.jobType] ? JOB_TYPE_LABELS[cachedResults.jobType] : (isJobCached ? 'Job application' : null);
+            const jobStageLabel = isJobCached && cachedResults.jobType && JOB_TYPE_LABELS[cachedResults.jobType] ? JOB_TYPE_LABELS[cachedResults.jobType] : (isJobCached ? 'Applications Sent' : null);
             const badgeHtml = jobStageLabel
                 ? `<div class="jobApplicationBadge" style="margin-bottom: 10px;">${escapeHtml(jobStageLabel)}</div>`
                 : (cachedResults.category ? `<div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">${escapeHtml(cachedResults.category)}</div>` : '');
@@ -472,6 +475,115 @@ export class UIController {
         const loading = this.emailRepository.isLoadingMore();
         this.domRefs.loadMoreBtn.style.display = hasMore ? 'block' : 'none';
         this.domRefs.loadMoreBtn.disabled = !!loading;
+    }
+
+    /**
+     * Show Pipeline (Sankey) view and set textarea content. Defaults to Code view.
+     * @param {string} sankeyText - SankeyMATIC-format text
+     */
+    showPipelineView(sankeyText) {
+        if (this.domRefs.sankeySection) this.domRefs.sankeySection.style.display = 'block';
+        if (this.domRefs.sankeyTextarea) this.domRefs.sankeyTextarea.value = sankeyText || '';
+        if (this.domRefs.emailList) this.domRefs.emailList.style.display = 'none';
+        if (this.domRefs.loadMoreBtn) this.domRefs.loadMoreBtn.style.display = 'none';
+        if (this.domRefs.managePromotionsBtn) this.domRefs.managePromotionsBtn.style.display = 'none';
+        if (this.domRefs.emptyState) this.domRefs.emptyState.style.display = 'none';
+        this.showPipelineCodeView();
+    }
+
+    /**
+     * Show Code view (textarea + actions); hide Diagram view.
+     */
+    showPipelineCodeView() {
+        if (this.domRefs.sankeyCodeView) this.domRefs.sankeyCodeView.style.display = 'block';
+        if (this.domRefs.sankeyDiagramContainer) this.domRefs.sankeyDiagramContainer.style.display = 'none';
+        if (this.domRefs.sankeyCodeViewBtn) {
+            this.domRefs.sankeyCodeViewBtn.classList.add('active');
+            this.domRefs.sankeyCodeViewBtn.setAttribute('aria-selected', 'true');
+        }
+        if (this.domRefs.sankeyDiagramViewBtn) {
+            this.domRefs.sankeyDiagramViewBtn.classList.remove('active');
+            this.domRefs.sankeyDiagramViewBtn.setAttribute('aria-selected', 'false');
+        }
+    }
+
+    /**
+     * Show Diagram view: render D3 Sankey diagram from current flow data (no iframe).
+     */
+    showPipelineDiagramView() {
+        if (this.domRefs.sankeyCodeView) this.domRefs.sankeyCodeView.style.display = 'none';
+        if (this.domRefs.sankeyDiagramContainer) this.domRefs.sankeyDiagramContainer.style.display = 'block';
+        if (this.domRefs.sankeyCodeViewBtn) {
+            this.domRefs.sankeyCodeViewBtn.classList.remove('active');
+            this.domRefs.sankeyCodeViewBtn.setAttribute('aria-selected', 'false');
+        }
+        if (this.domRefs.sankeyDiagramViewBtn) {
+            this.domRefs.sankeyDiagramViewBtn.classList.add('active');
+            this.domRefs.sankeyDiagramViewBtn.setAttribute('aria-selected', 'true');
+        }
+
+        const container = this.domRefs.sankeyDiagramContainer;
+        container.innerHTML = '';
+
+        const text = this.domRefs.sankeyTextarea ? this.domRefs.sankeyTextarea.value : '';
+        if (!this._hasSankeyFlowLines(text)) {
+            const msg = document.createElement('p');
+            msg.className = 'sankeyDiagramEmpty';
+            msg.textContent = 'Enter flow data in Code view and click Refresh, or paste SankeyMATIC text (e.g. Source [10] Target).';
+            container.appendChild(msg);
+            return;
+        }
+
+        import('../services/SankeyDiagramRenderer.js').then(({ parseSankeyText, renderSankey }) => {
+            const data = parseSankeyText(text);
+            if (!data.nodes.length || !data.links.length) {
+                const msg = document.createElement('p');
+                msg.className = 'sankeyDiagramEmpty';
+                msg.textContent = 'No valid flow lines found. Use format: Source [amount] Target';
+                container.appendChild(msg);
+                return;
+            }
+            renderSankey(container, data);
+        }).catch((err) => {
+            console.error('Sankey render failed:', err);
+            const errEl = document.createElement('p');
+            errEl.className = 'sankeyDiagramError';
+            errEl.textContent = 'Could not load diagram. Reload the extension.';
+            container.appendChild(errEl);
+        });
+    }
+
+    /**
+     * Check if text has at least one SankeyMATIC flow line (Source [amount] Target).
+     * @param {string} text
+     * @returns {boolean}
+     */
+    _hasSankeyFlowLines(text) {
+        if (!text || typeof text !== 'string') return false;
+        const flowLineRegex = /^.+\s*\[\s*[\d.+]+\s*\]\s*.+$/;
+        const lines = text.split(/\r?\n/);
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('//')) continue;
+            if (flowLineRegex.test(trimmed)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Show email list view (hide Pipeline)
+     */
+    showEmailListView() {
+        if (this.domRefs.sankeySection) this.domRefs.sankeySection.style.display = 'none';
+        if (this.domRefs.emailList) this.domRefs.emailList.style.display = 'block';
+    }
+
+    /**
+     * Update Pipeline textarea content (e.g. on Refresh)
+     * @param {string} sankeyText - SankeyMATIC-format text
+     */
+    setPipelineContent(sankeyText) {
+        if (this.domRefs.sankeyTextarea) this.domRefs.sankeyTextarea.value = sankeyText || '';
     }
 
     // UI feedback methods

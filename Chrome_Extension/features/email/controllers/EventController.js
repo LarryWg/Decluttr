@@ -167,6 +167,49 @@ export class EventController {
                 }
             });
         }
+
+        // Pipeline (Sankey) view – Code / Diagram toggle
+        if (this.domRefs.sankeyCodeViewBtn) {
+            this.domRefs.sankeyCodeViewBtn.addEventListener('click', () => {
+                this.uiController.showPipelineCodeView();
+            });
+        }
+        if (this.domRefs.sankeyDiagramViewBtn) {
+            this.domRefs.sankeyDiagramViewBtn.addEventListener('click', () => {
+                this.uiController.showPipelineDiagramView();
+            });
+        }
+        if (this.domRefs.sankeyCopyBtn) {
+            this.domRefs.sankeyCopyBtn.addEventListener('click', async () => {
+                const text = this.domRefs.sankeyTextarea?.value || '';
+                try {
+                    await navigator.clipboard.writeText(text);
+                    this.uiController.showSuccess('Copied to clipboard');
+                    setTimeout(() => this.uiController.hideSuccess(), 2000);
+                } catch (err) {
+                    this.uiController.showError('Failed to copy');
+                }
+            });
+        }
+        if (this.domRefs.sankeyExportBtn) {
+            this.domRefs.sankeyExportBtn.addEventListener('click', () => {
+                const text = this.domRefs.sankeyTextarea?.value || '';
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'job-pipeline-sankey.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+                this.uiController.showSuccess('Exported as job-pipeline-sankey.txt');
+                setTimeout(() => this.uiController.hideSuccess(), 2000);
+            });
+        }
+        if (this.domRefs.sankeyRefreshBtn) {
+            this.domRefs.sankeyRefreshBtn.addEventListener('click', () => {
+                this.emailController.refreshPipelineView();
+            });
+        }
     }
 }
 

@@ -10,6 +10,64 @@ export class GmailApiService {
     }
 
     /**
+     * Fetch message IDs only (lightweight; no full details).
+     * @param {string|null} pageToken - Optional page token for pagination
+     * @returns {Promise<{messageIds: string[], nextPageToken: string|null}>}
+     */
+    async fetchMessageIds(pageToken = null) {
+        const token = await getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+        let url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${MAX_EMAILS_TO_FETCH}&q=in:inbox`;
+        if (pageToken) {
+            url += `&pageToken=${pageToken}`;
+        }
+        const listResponse = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!listResponse.ok) {
+            if (listResponse.status === 401) {
+                await refreshToken();
+                return this.fetchMessageIds(pageToken);
+            }
+            throw new Error(`Gmail API error: ${listResponse.status} ${listResponse.statusText}`);
+        }
+        const listData = await listResponse.json();
+        const messageIds = (listData.messages || []).map((msg) => msg.id);
+        return {
+            messageIds,
+            nextPageToken: listData.nextPageToken || null
+        };
+    }
+
+    /**
+     * Fetch full details for a list of message IDs (for incremental load: new IDs only).
+     * @param {string[]} messageIds - Gmail message IDs
+     * @returns {Promise<Object[]>} Parsed email objects
+     */
+    async fetchEmailsByIds(messageIds) {
+        if (!messageIds || messageIds.length === 0) {
+            return [];
+        }
+        const token = await getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+        const results = await Promise.all(
+            messageIds.map(async (id) => {
+                try {
+                    return await this.fetchEmailDetails(id, token);
+                } catch (error) {
+                    console.error(`Failed to fetch email ${id}:`, error);
+                    return null;
+                }
+            })
+        );
+        return results.filter((e) => e !== null);
+    }
+
+    /**
      * Fetch email list from Gmail API
      * @param {string} pageToken - Optional page token for pagination
      * @returns {Promise<{emails: Array, nextPageToken: string|null}>} Object with emails array and next page token
@@ -91,16 +149,23 @@ export class GmailApiService {
         return this.parser.parseEmailData(data);
     }
 
-    async getOrCreateJobLabel() {
+    /**
+     * Fetch full email details by ID (gets token internally). Use for View Details when body is missing.
+     * @param {string} messageId - Gmail message ID
+     * @returns {Promise<Object>} Parsed email object with body, fullContent, etc.
+     */
+    async fetchEmailDetailsById(messageId) {
         const token = await getAuthToken();
         if (!token) {
             throw new Error('Not authenticated');
         }
-        const stored = await new Promise((resolve) => {
-            chrome.storage.local.get([STORAGE_KEY_JOB_LABEL_ID], (r) => resolve(r[STORAGE_KEY_JOB_LABEL_ID] || null));
-        });
-        if (stored) {
-            return stored;
+        return this.fetchEmailDetails(messageId, token);
+    }
+
+    async getOrCreateJobLabel() {
+        const token = await getAuthToken();
+        if (!token) {
+            throw new Error('Not authenticated');
         }
         const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -113,7 +178,21 @@ export class GmailApiService {
             throw new Error(`Gmail labels list failed: ${listRes.status}`);
         }
         const listData = await listRes.json();
-        const found = (listData.labels || []).find((l) => l.name === JOB_LABEL_NAME);
+        const labels = listData.labels || [];
+
+        const stored = await new Promise((resolve) => {
+            chrome.storage.local.get([STORAGE_KEY_JOB_LABEL_ID], (r) => resolve(r[STORAGE_KEY_JOB_LABEL_ID] || null));
+        });
+        if (stored && labels.some((l) => l.id === stored)) {
+            return stored;
+        }
+        if (stored) {
+            await new Promise((resolve) => {
+                chrome.storage.local.remove([STORAGE_KEY_JOB_LABEL_ID], resolve);
+            });
+        }
+
+        const found = labels.find((l) => l.name === JOB_LABEL_NAME);
         if (found) {
             await new Promise((resolve) => {
                 chrome.storage.local.set({ [STORAGE_KEY_JOB_LABEL_ID]: found.id }, resolve);
