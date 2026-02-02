@@ -145,9 +145,8 @@ async function startCamera() {
     }
 }
 
-async function initOffscreen() {
+(async () => {
     await initMediaPipe();
     await startCamera();
-}
-
-initOffscreen();
+    console.log("Background tracking initiated.");
+})();

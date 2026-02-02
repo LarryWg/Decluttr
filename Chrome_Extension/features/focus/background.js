@@ -1,5 +1,7 @@
 // background.js
 
+import { FilesetResolver } from "./lib/vision_bundle";
+
 
 // --- Global Variables ---
 let isDistracted = false;
@@ -72,8 +74,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     cameraShouldBeActive = message.active;
     if (!cameraShouldBeActive) {
       closeOffscreen();
+    } else {
+    sendResponse({ ok: false, reason: 'Camera was not enabled by user' });
     }
-    sendResponse({ ok: true });
     return true;
   }
 

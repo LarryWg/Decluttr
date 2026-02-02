@@ -43,6 +43,24 @@ chrome.runtime.sendMessage({ type: 'GET_STATS' }, (response) => {
     }
 });
 
+function stopCamera() {
+    const stream = video.srcObject;
+    if (stream) {
+        const tracks = stream.getTracks();
+
+        tracks.forEach(track => {
+            track.stop();
+        });
+        video.srcObject = null;
+    }
+
+    cameraStarted = false;
+
+    if (typeof setStatus == "function"){
+        setStatus('ready');
+    }
+}
+
 if (resetBtn) {
     resetBtn.onclick = () => { // Use .onclick for a direct assignment check
         console.log("Resetting session...");
@@ -86,7 +104,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
 toggleCamBtn.addEventListener('click', async () => {
     const isShowing = video.classList.contains('video-hidden');
-    if (video.classList.contains('video-hidden')) {
+    if (isShowing) {
         video.classList.remove('video-hidden');
         video.classList.add('video-visible');
         if (videoPlaceholder) videoPlaceholder.classList.add('hidden');
@@ -116,9 +134,10 @@ toggleCamBtn.addEventListener('click', async () => {
             video.srcObject.getTracks().forEach(track => track.stop());
             video.srcObject = null;
         }
-        chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: false });
+        chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: cameraStarted });
         chrome.runtime.sendMessage({ type: 'ALARM_STATE', active: false });
         cameraStarted = false;
+        stopCamera();
         setStatus('ready');
 
     }
