@@ -19,6 +19,7 @@ const toggleCamBtn = document.getElementById('toggleCamBtn');
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 const videoPlaceholder = document.getElementById('videoPlaceholder');
+const resetBtn = document.getElementById('resetStatsBtn');
 
 // --- Global Variables ---
 let faceLandmarker;        
@@ -31,6 +32,33 @@ function setStatus(state) {
     if (!statusDot || !statusText) return;
     statusDot.className = 'status-dot status-' + state;
     statusText.textContent = state === 'focused' ? 'Focused' : state === 'distracted' ? 'Look at screen!' : state === 'tracking' ? 'Watching' : 'Ready';
+}
+
+chrome.runtime.sendMessage({ type: 'GET_STATS' }, (response) => {
+    if (response) {
+        const focusEl = document.getElementById('focusTime');
+        const distractEl = document.getElementById('distractTime');
+        if (focusEl) focusEl.textContent = formatTime(response.focusedSeconds);
+        if (distractEl) distractEl.textContent = formatTime(response.distractedSeconds);
+    }
+});
+
+if (resetBtn) {
+    resetBtn.onclick = () => { // Use .onclick for a direct assignment check
+        console.log("Resetting session...");
+        
+        // Haptic feedback effect
+        resetBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => resetBtn.style.transform = '', 100);
+        
+        chrome.runtime.sendMessage({ type: 'RESET_STATS' }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("Reset failed:", chrome.runtime.lastError);
+            } else {
+                console.log("Stats cleared successfully");
+            }
+        });
+    };
 }
 
 // Tell background to free camera for Focus UI (close offscreen)

@@ -195,7 +195,6 @@ body {
     50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0.5); }
 }
 
-/* Glassmorphism Stats Grid */
 .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -248,4 +247,30 @@ body {
 #distractTime {
     color: #ef4444;
     text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.stat-reset-btn {
+    grid-column: span 2; /* Makes it wide under the two cards */
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px border var(--decluttr-surface-border);
+    border-radius: 8px;
+    color: var(--decluttr-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.stat-reset-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--decluttr-text);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.stat-reset-btn span {
+    margin-right: 4px;
+    font-size: 14px;
 }

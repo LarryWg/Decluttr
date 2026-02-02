@@ -59,6 +59,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'RESET_STATS') {
+    sessionStats.focusedSeconds = 0;
+    sessionStats.distractedSeconds = 0;
+    chrome.runtime.sendMessage({
+        type: 'STATS_UPDATE',
+        stats: sessionStats
+    }).catch(() => {});
+    sendResponse({ ok: true });
+    return true;
+    }
+
   if (message.type === 'ALARM_STATE') {
     isDistracted = message.active;
     
