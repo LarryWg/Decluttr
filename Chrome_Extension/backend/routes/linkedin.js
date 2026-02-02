@@ -36,18 +36,22 @@ router.post('/search', async (req, res) => {
 /**
  * POST /api/linkedin/generate-message
  * Generate a personalized message for a single profile
- * Body: { name, title, company, location }
+ * Body: { name, title, company, location, userDescription? }
  * Returns: { message: string }
  */
 router.post('/generate-message', async (req, res) => {
   try {
-    const { name, title, company, location } = req.body;
+    const { name, title, company, location, userDescription } = req.body;
 
     if (!name || !title) {
       return res.status(400).json({ error: "Name and title are required" });
     }
 
-    const message = await generateLinkedInMessage({ name, title, company, location });
+    const message = await generateLinkedInMessage(
+      { name, title, company, location },
+      userDescription
+    );
+    
     res.json({ message });
 
   } catch (error) {
@@ -59,12 +63,12 @@ router.post('/generate-message', async (req, res) => {
 /**
  * POST /api/linkedin/search-and-generate
  * Search LinkedIn profiles and generate messages for all results
- * Body: { query: string, limit?: number }
+ * Body: { query: string, limit?: number, userDescription?: string }
  * Returns: { profiles: Array<ProfileWithMessage> }
  */
 router.post('/search-and-generate', async (req, res) => {
   try {
-    const { query, limit } = req.body;
+    const { query, limit, userDescription } = req.body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return res.status(400).json({ error: "Search query is required" });
@@ -82,7 +86,7 @@ router.post('/search-and-generate', async (req, res) => {
     }
 
     // Generate messages for all profiles
-    const profilesWithMessages = await batchGenerateMessages(profiles);
+    const profilesWithMessages = await batchGenerateMessages(profiles, userDescription);
     
     res.json({ 
       profiles: profilesWithMessages,

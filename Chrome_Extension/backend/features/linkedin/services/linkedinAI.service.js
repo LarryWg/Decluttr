@@ -109,22 +109,27 @@ function parseLinkedInSearchResult(item) {
 /**
  * Generate personalized LinkedIn connection message
  * @param {Object} profile - LinkedIn profile object
+ * @param {string} userDescription - Custom user description (e.g., "Computer Science student at MIT seeking internships")
  * @returns {Promise<string>} Generated message
  */
-async function generateLinkedInMessage(profile) {
+async function generateLinkedInMessage(profile, userDescription = null) {
   const { name, title, company, location } = profile;
+
+  // Default user description if not provided
+  const defaultUserDescription = "Computer Science student at Carleton University seeking internships or co-op opportunities";
+  const userDesc = userDescription && userDescription.trim() ? userDescription.trim() : defaultUserDescription;
 
   const prompt = `
 Write a personalized LinkedIn connection message.
 
-Person:
+Person to connect with:
 Name: ${name}
 Title: ${title}
 Company: ${company || "their company"}
 Location: ${location || "their area"}
 
-User:
-Computer Science student at Carleton University seeking internships or co-op opportunities.
+About me (the sender):
+${userDesc}
 
 Constraints:
 - Friendly and professional
@@ -132,6 +137,7 @@ Constraints:
 - No emojis
 - Do not mention AI
 - Ask politely to connect
+- Make it feel genuine and personalized based on the recipient's role and my background
 `;
 
   const completion = await openai.chat.completions.create({
@@ -146,13 +152,14 @@ Constraints:
 /**
  * Batch generate messages for multiple profiles
  * @param {Array} profiles - Array of profile objects
+ * @param {string} userDescription - Custom user description
  * @returns {Promise<Array>} Array of profiles with generated messages
  */
-async function batchGenerateMessages(profiles) {
+async function batchGenerateMessages(profiles, userDescription = null) {
   const profilesWithMessages = await Promise.all(
     profiles.map(async (profile) => {
       try {
-        const message = await generateLinkedInMessage(profile);
+        const message = await generateLinkedInMessage(profile, userDescription);
         return {
           ...profile,
           generatedMessage: message

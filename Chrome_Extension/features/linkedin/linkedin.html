@@ -9,14 +9,54 @@
 </head>
 <body>
   <div class="container">
-    <h2>LinkedIn AI Message Generator</h2>
+    <!-- Header with Settings -->
+    <div class="header">
+      <h2>LinkedIn AI Message Generator</h2>
+      <button class="settingsButton" id="settingsBtn" title="Settings">⚙️</button>
+    </div>
+
+    <!-- Settings Panel (hidden by default) -->
+    <div class="settingsPanel" id="settingsPanel" style="display: none;">
+      <h3>Settings</h3>
+      
+      <section class="settingsSection">
+        <h4 class="settingsSectionTitle">Your Information</h4>
+        
+        <div class="settingItem">
+          <label for="userNameInput">Your Name</label>
+          <input type="text" id="userNameInput" class="settingInput" placeholder="e.g., John Doe" />
+        </div>
+        
+        <div class="settingItem">
+          <label for="userMajorInput">Major / Field of Study</label>
+          <input type="text" id="userMajorInput" class="settingInput" placeholder="e.g., Computer Science, Business Administration" />
+        </div>
+        
+        <div class="settingItem">
+          <label for="userUniversityInput">University / School</label>
+          <input type="text" id="userUniversityInput" class="settingInput" placeholder="e.g., Carleton University, MIT" />
+        </div>
+        
+        <div class="settingItem">
+          <label for="userTargetRoleInput">Target Job Title / Role</label>
+          <input type="text" id="userTargetRoleInput" class="settingInput" placeholder="e.g., Software Engineer Intern, Marketing Analyst" />
+        </div>
+        
+        <div class="settingItem">
+          <label for="userAdditionalInfoInput">Additional Context (Optional)</label>
+          <textarea id="userAdditionalInfoInput" class="settingTextarea" rows="3" placeholder="e.g., seeking summer 2026 internship, interested in AI/ML, available for full-time"></textarea>
+        </div>
+        
+        <button class="saveButton" id="saveSettingsBtn">Save Settings</button>
+      </section>
+    </div>
 
     <!-- Search Section -->
     <div class="search-section">
       <h3>Search LinkedIn Profiles</h3>
-      <input id="searchQuery" placeholder="e.g., ceo automotive united states" />
+      <input id="searchQuery" placeholder="e.g., talent acquisition Shopify Canada" />
       <button class="button" id="searchBtn">Search Profiles</button>
-      <p class="search-hint">Searches LinkedIn profiles using Google. Try searches like "ceo automotive united states" or "software engineer toronto"</p>
+      <p class="search-hint">Searches LinkedIn profiles using Google. Try searches like "recruiters google united states" or "talent acquisition rbc toronto"</p>
     </div>
 
     <!-- Loading indicator -->

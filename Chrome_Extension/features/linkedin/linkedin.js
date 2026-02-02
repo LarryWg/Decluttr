@@ -1,3 +1,32 @@
+// Storage keys for user settings
+const STORAGE_KEYS = {
+  USER_NAME: 'linkedin_user_name',
+  USER_MAJOR: 'linkedin_user_major',
+  USER_UNIVERSITY: 'linkedin_user_university',
+  USER_TARGET_ROLE: 'linkedin_user_target_role',
+  USER_ADDITIONAL_INFO: 'linkedin_user_additional_info'
+};
+
+// Load settings on page load
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadSettings();
+});
+
+// Settings toggle
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  const settingsPanel = document.getElementById("settingsPanel");
+  const isVisible = settingsPanel.style.display !== 'none';
+  settingsPanel.style.display = isVisible ? 'none' : 'block';
+});
+
+// Save settings
+document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+  await saveSettings();
+  document.getElementById("settingsPanel").style.display = 'none';
+  alert("Settings saved successfully!");
+});
+
+// Back button
 document.getElementById("backBtn").addEventListener("click", () => {
   window.location.href = "../../popup/App.html";
 });
@@ -18,6 +47,55 @@ const companyInput = document.getElementById("company");
 const locationInput = document.getElementById("location");
 
 let selectedProfile = null;
+
+/**
+ * Load user settings from chrome.storage
+ */
+async function loadSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(Object.values(STORAGE_KEYS), (result) => {
+      document.getElementById("userNameInput").value = result[STORAGE_KEYS.USER_NAME] || '';
+      document.getElementById("userMajorInput").value = result[STORAGE_KEYS.USER_MAJOR] || '';
+      document.getElementById("userUniversityInput").value = result[STORAGE_KEYS.USER_UNIVERSITY] || '';
+      document.getElementById("userTargetRoleInput").value = result[STORAGE_KEYS.USER_TARGET_ROLE] || '';
+      document.getElementById("userAdditionalInfoInput").value = result[STORAGE_KEYS.USER_ADDITIONAL_INFO] || '';
+      resolve();
+    });
+  });
+}
+
+/**
+ * Save user settings to chrome.storage
+ */
+async function saveSettings() {
+  return new Promise((resolve) => {
+    const settings = {
+      [STORAGE_KEYS.USER_NAME]: document.getElementById("userNameInput").value.trim(),
+      [STORAGE_KEYS.USER_MAJOR]: document.getElementById("userMajorInput").value.trim(),
+      [STORAGE_KEYS.USER_UNIVERSITY]: document.getElementById("userUniversityInput").value.trim(),
+      [STORAGE_KEYS.USER_TARGET_ROLE]: document.getElementById("userTargetRoleInput").value.trim(),
+      [STORAGE_KEYS.USER_ADDITIONAL_INFO]: document.getElementById("userAdditionalInfoInput").value.trim()
+    };
+    chrome.storage.local.set(settings, resolve);
+  });
+}
+
+/**
+ * Get user settings for message generation
+ */
+async function getUserSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(Object.values(STORAGE_KEYS), (result) => {
+      resolve({
+        name: result[STORAGE_KEYS.USER_NAME] || '',
+        major: result[STORAGE_KEYS.USER_MAJOR] || 'Computer Science',
+        university: result[STORAGE_KEYS.USER_UNIVERSITY] || 'Carleton University',
+        targetRole: result[STORAGE_KEYS.USER_TARGET_ROLE] || 'internship or co-op opportunities',
+        additionalInfo: result[STORAGE_KEYS.USER_ADDITIONAL_INFO] || ''
+      });
+    });
+  });
+}
 
 /**
  * Search for LinkedIn profiles
@@ -121,6 +199,42 @@ async function generateMessage(profile) {
   copyBtn.style.display = "none";
 
   try {
+    // Get user settings
+    const userSettings = await getUserSettings();
+    
+    // Build user description
+    let userDescription = '';
+    if (userSettings.name) {
+      userDescription = userSettings.name;
+      if (userSettings.major && userSettings.university) {
+        userDescription += `, ${userSettings.major} student at ${userSettings.university}`;
+      } else if (userSettings.major) {
+        userDescription += `, ${userSettings.major} student`;
+      } else if (userSettings.university) {
+        userDescription += `, student at ${userSettings.university}`;
+      }
+    } else if (userSettings.major && userSettings.university) {
+      userDescription = `${userSettings.major} student at ${userSettings.university}`;
+    } else if (userSettings.major) {
+      userDescription = `${userSettings.major} student`;
+    } else if (userSettings.university) {
+      userDescription = `Student at ${userSettings.university}`;
+    } else {
+      userDescription = 'Computer Science student at Carleton University'; // Default fallback
+    }
+    
+    // Add target role
+    if (userSettings.targetRole) {
+      userDescription += ` seeking ${userSettings.targetRole}`;
+    } else {
+      userDescription += ' seeking internship or co-op opportunities';
+    }
+    
+    // Add additional context if provided
+    if (userSettings.additionalInfo) {
+      userDescription += `. ${userSettings.additionalInfo}`;
+    }
+
     const response = await fetch("http://localhost:3000/api/linkedin/generate-message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -128,7 +242,8 @@ async function generateMessage(profile) {
         name: profile.name,
         title: profile.title,
         company: profile.company,
-        location: profile.location
+        location: profile.location,
+        userDescription: userDescription
       })
     });
 
@@ -138,7 +253,7 @@ async function generateMessage(profile) {
 
   } catch (err) {
     console.error(err);
-    output.value = "Error generating message.";
+    output.value = "Error generating message. Make sure the backend server is running.";
   }
 }
 
