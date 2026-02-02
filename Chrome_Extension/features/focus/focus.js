@@ -5,6 +5,12 @@
 import { initTheme } from '../../utils/theme.js';
 initTheme();
 
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
 // --- Element References ---
 const video = document.getElementById('camera-feed');
 const canvas = document.getElementById('overlay');
@@ -38,6 +44,16 @@ backBtn.addEventListener("click", () => {
 
 window.addEventListener('beforeunload', () => {
     chrome.runtime.sendMessage({ type: 'FOCUS_UI_CLOSED' });
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'STATS_UPDATE') {
+        const focusEl = document.getElementById('focusTime');
+        const distractEl = document.getElementById('distractTime');
+        
+        if (focusEl) focusEl.textContent = formatTime(message.stats.focusedSeconds);
+        if (distractEl) distractEl.textContent = formatTime(message.stats.distractedSeconds);
+    }
 });
 
 toggleCamBtn.addEventListener('click', async () => {

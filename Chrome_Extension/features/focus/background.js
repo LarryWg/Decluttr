@@ -1,4 +1,26 @@
 // background.js
+let sessionStats = {
+    focusedSeconds: 0,
+    distractedSeconds: 0,
+}
+let isDistracted = false;
+let statsInterval = null;
+
+function startStatsTimer() {
+  if (statsInterval) return;
+  statsInterval = setInterval(() => {
+    if (isDistracted) {
+      sessionStats.distractedSeconds++;
+    } else {
+      sessionStats.focusedSeconds++;
+    }
+
+    chrome.runtime.sendMessage({
+      type: 'STATS_UPDATE',
+      stats: sessionStats
+    }).catch(() => {});
+  }, 1000);
+}
 
 async function setupOffscreen() {
   if (await chrome.offscreen.hasDocument()) return;
@@ -21,14 +43,26 @@ async function closeOffscreen() {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'FOCUS_UI_OPEN') {
-    closeOffscreen().then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
-    return true; // async response
+    closeOffscreen()
+      .then(() => {
+        startStatsTimer();
+        sendResponse({ ok: true });
+      })
+      .catch(() => sendResponse({ ok: false }));
+    return true; 
   }
+
   if (message.type === 'FOCUS_UI_CLOSED') {
-    setupOffscreen().then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
+    setupOffscreen()
+      .then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
     return true;
   }
+
   if (message.type === 'ALARM_STATE') {
+    isDistracted = message.active;
+    
+    // Manage the distraction overlay on the active tab
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
       const activeTab = tabs[0];
       if (activeTab && activeTab.url.startsWith("http")) {
@@ -55,7 +89,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     });
   }
+
+  if (message.type === 'GET_STATS') {
+    sendResponse(sessionStats);
+  }
 });
+
 
 chrome.runtime.onStartup.addListener(setupOffscreen);
 chrome.runtime.onInstalled.addListener(setupOffscreen);
