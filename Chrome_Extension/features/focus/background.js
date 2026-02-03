@@ -52,12 +52,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === 'ALARM_STATE') {
     isDistracted = message.active;
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-            chrome.tabs.sendMessage(tabs[0].id, { 
-                type: 'DISTRACTION_VISUAL', 
-                active: isDistracted 
-            }).catch(err => console.log("Tab not ready for alert yet."));
+    chrome.tabs.query({ currentWindow: true }, async (tabs) => {
+        // Prefer the active tab if it's a web page; otherwise use any http(s) tab so overlay shows on user's screen
+        const activeTab = tabs.find(t => t.active);
+        const url = (activeTab && activeTab.url) || '';
+        const activeIsWeb = url.startsWith('http://') || url.startsWith('https://');
+        const targetTab = activeIsWeb ? activeTab : tabs.find(t => {
+            const u = t.url || '';
+            return (u.startsWith('http://') || u.startsWith('https://'));
+        });
+        if (!targetTab?.id) return;
+
+        const payload = { type: 'DISTRACTION_VISUAL', active: isDistracted };
+        try {
+            await chrome.tabs.sendMessage(targetTab.id, payload);
+        } catch (err) {
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId: targetTab.id },
+                    files: ['features/focus/red_alert.js']
+                });
+                await new Promise(r => setTimeout(r, 50));
+                await chrome.tabs.sendMessage(targetTab.id, payload);
+            } catch (e) {
+                console.log('Distraction overlay could not be shown in tab:', e?.message);
+            }
         }
     });
 

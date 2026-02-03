@@ -63,10 +63,10 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'UI_UPDATE_STATE') {
         const container = document.querySelector('.focus-container');
         if (message.active) {
-            container.style.boxShadow = "inset 0 0 0 12px #ef4444"; // The Red Square
-            statusText.textContent = "Look at screen!";
+            if (container) container.style.boxShadow = "inset 0 0 0 12px #ef4444";
+            if (statusText) statusText.textContent = "Look at screen!";
         } else {
-            container.style.boxShadow = "none";
+            if (container) container.style.boxShadow = "none";
         }
     }
 });
@@ -101,7 +101,7 @@ toggleCamBtn.addEventListener('click', async () => {
     } else {
         video.classList.replace('video-visible', 'video-hidden');
         videoPlaceholder.classList.remove('hidden');
-        toggleCamBtn.querySelector('.btn-label').textContent = 'Show Camera';
+        toggleCamBtn.querySelector('.btn-label').textContent = 'Start Session';
         toggleCamBtn.classList.remove('active');
         
         chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: false });
@@ -130,7 +130,7 @@ async function startCamera() {
         video.classList.remove('video-visible');
         if (videoPlaceholder) videoPlaceholder.classList.remove('hidden');
         if (toggleCamBtn) {
-            toggleCamBtn.querySelector('.btn-label').textContent = 'Show Camera';
+            toggleCamBtn.querySelector('.btn-label').textContent = 'Start Session';
             toggleCamBtn.querySelector('.btn-icon').textContent = '▶';
             toggleCamBtn.classList.remove('active');
             toggleCamBtn.disabled = false;
@@ -215,7 +215,7 @@ async function initMediaPipe() {
         });
 
         console.log("Eye Tracking Initialized");
-        // Camera starts when user clicks "Show Camera" so video has proper dimensions
+        // Camera starts when user clicks "Start Session" so video has proper dimensions
     } catch (err) {
         console.error("Initialization error:", err);
     }
