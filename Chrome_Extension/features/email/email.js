@@ -46,7 +46,8 @@ class EmailController {
             this.backendApiService,
             this.unsubscribeService,
             (email) => this.applyJobLabelForEmail(email),
-            (email) => this.ensureEmailFullContent(email)
+            (email) => this.ensureEmailFullContent(email),
+            () => this.refreshPipelineView()
         );
         
         this.eventController = new EventController(
@@ -92,10 +93,12 @@ class EmailController {
 
                 const hadStoredData = await this.emailRepository.loadFromStorage();
                 if (hadStoredData) {
+                    this.applyCacheToEmailList();
                     this.uiController.updateInboxTabsUI();
                     this.uiController.updateManagePromotionsButton();
                     this.uiController.renderEmailList();
                     this.uiController.updateLoadMoreButton();
+                    this.uiController.renderStatsDashboard(this.calculateStats());
                     this.uiController.hideLoading();
                     this.runIncrementalFetch();
                     return;
@@ -130,13 +133,12 @@ class EmailController {
             this.emailRepository.setNextPageToken(nextPageToken);
             const autoCategorize = await this.settingsService.getAutoCategorize();
             if (autoCategorize && newEmails.length > 0) {
-                this.uiController.showLoading('Categorizing new emails...');
                 await this.autoCategorizeEmails(newEmails);
-                this.uiController.hideLoading();
             }
             await this.emailRepository.saveToStorage();
             this.uiController.renderEmailList();
             this.uiController.updateLoadMoreButton();
+            this.uiController.renderStatsDashboard(this.calculateStats());
         } catch (error) {
             console.error('Incremental fetch error:', error);
             if (!error.message.includes('Not authenticated') && !error.message.includes('401')) {
@@ -242,7 +244,9 @@ class EmailController {
     }
 
     /**
-     * Fetch and display emails
+     * Fetch and display emails.
+     * On Refresh: reuses existing email objects when IDs are still in Gmail's first page so
+     * categories and cache stay correct; sorts by date (newest first) for stable order.
      */
     async fetchAndDisplayEmails() {
         try {
@@ -250,33 +254,36 @@ class EmailController {
             this.uiController.hideError();
             this.uiController.hideSuccess();
             this.domRefs.emailList.innerHTML = '';
-            
-            // Reset pagination
-            this.emailRepository.setNextPageToken(null);
-            this.emailRepository.setEmails([]);
-            
-            const result = await this.gmailApiService.fetchEmailList();
-            this.emailRepository.setEmails(result.emails);
-            this.emailRepository.setNextPageToken(result.nextPageToken);
-            
+
+            const currentEmails = this.emailRepository.getEmails();
+            const currentById = new Map(currentEmails.map((e) => [e.id, e]));
+
+            const { messageIds, nextPageToken } = await this.gmailApiService.fetchMessageIds();
+            this.emailRepository.setNextPageToken(nextPageToken);
+
+            const idsToFetch = messageIds.filter((id) => !currentById.has(id));
+            const newEmails = idsToFetch.length > 0 ? await this.gmailApiService.fetchEmailsByIds(idsToFetch) : [];
+            const newById = new Map(newEmails.map((e) => [e.id, e]));
+            const merged = messageIds.map((id) => currentById.get(id) || newById.get(id)).filter(Boolean);
+            this.sortEmailsByDateDesc(merged);
+            this.emailRepository.setEmails(merged);
+
+            this.applyCacheToEmailList();
             this.uiController.hideLoading();
-            
-            const autoCategorize = await this.settingsService.getAutoCategorize();
-            if (autoCategorize && this.emailRepository.getEmails().length > 0) {
-                this.uiController.showLoading('Categorizing emails...');
-                await this.autoCategorizeEmails(this.emailRepository.getEmails());
-                this.uiController.hideLoading();
-            }
-            
-            // Reset to primary inbox when fetching new emails
             this.emailRepository.setSelectedInbox(DEFAULT_INBOX);
             this.uiController.updateInboxTabsUI();
-            
-            // Render filtered emails
             this.uiController.renderEmailList();
             this.uiController.updateLoadMoreButton();
+            this.uiController.renderStatsDashboard(this.calculateStats());
 
+            const autoCategorize = await this.settingsService.getAutoCategorize();
+            if (autoCategorize && merged.length > 0) {
+                await this.autoCategorizeEmails(merged);
+            }
             await this.emailRepository.saveToStorage();
+            this.uiController.renderEmailList();
+            this.uiController.updateLoadMoreButton();
+            this.uiController.renderStatsDashboard(this.calculateStats());
         } catch (error) {
             this.uiController.hideLoading();
             console.error('Fetch emails error:', error);
@@ -324,6 +331,7 @@ class EmailController {
             
             this.uiController.renderEmailList();
             this.uiController.updateLoadMoreButton();
+            this.uiController.renderStatsDashboard(this.calculateStats());
             await this.emailRepository.saveToStorage();
         } catch (error) {
             console.error('Load more emails error:', error);
@@ -364,12 +372,101 @@ class EmailController {
     }
 
     /**
-     * Auto-categorize emails in the background
+     * Calculate stats for the dashboard.
+     * @returns {Object} Stats object with totalEmails, jobApps, stages, responseRate
+     */
+    calculateStats() {
+        const emails = this.emailRepository.getEmails();
+        const jobEmails = this.emailRepository.getJobEmails();
+        const totalEmails = emails.length;
+        const jobApps = jobEmails.length;
+
+        // Count stages
+        const stages = {
+            applied: 0,
+            interview: 0,
+            offer: 0,
+            rejected: 0,
+            noResponse: 0
+        };
+
+        for (const email of jobEmails) {
+            const cached = this.emailRepository.getCachedResult(email.id);
+            // Prefer user override, then transitionTo, then jobType
+            const stage = cached?.userOverrideJobType || cached?.transitionTo || cached?.jobType;
+            
+            if (stage) {
+                if (stage === 'Applications Sent' || stage === 'applications_sent' || stage === 'application_confirmation') {
+                    stages.applied++;
+                } else if (stage === 'Interview' || stage === 'interview' || stage === 'OA / Screening' || stage === 'oa_screening') {
+                    stages.interview++;
+                } else if (stage === 'Offer' || stage === 'offer' || stage === 'Accepted' || stage === 'accepted') {
+                    stages.offer++;
+                } else if (stage === 'Rejected' || stage === 'rejected' || stage === 'rejection' || stage === 'declined') {
+                    stages.rejected++;
+                } else if (stage === 'No Response' || stage === 'no_response') {
+                    stages.noResponse++;
+                }
+            } else {
+                stages.applied++;
+            }
+        }
+
+        // Response rate = (interview + offer + rejected) / applied
+        const responded = stages.interview + stages.offer + stages.rejected;
+        const responseRate = stages.applied > 0 ? Math.round((responded / (stages.applied + responded)) * 100) : 0;
+
+        return {
+            totalEmails,
+            jobApps,
+            stages,
+            responseRate
+        };
+    }
+
+    /**
+     * Apply cached AI results to current email list (inboxCategory) so Job/Primary/Promotions
+     * are correct on first render without waiting for autoCategorize.
+     */
+    applyCacheToEmailList() {
+        const emails = this.emailRepository.getEmails();
+        for (const email of emails) {
+            const cached = this.emailRepository.getCachedResult(email.id);
+            if (cached) {
+                email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(cached.category, cached.jobType, cached.hasUnsubscribe);
+            }
+        }
+    }
+
+    /**
+     * Sort email array by date descending (newest first). Mutates and returns the array.
+     * @param {Array} emails - Array of email objects with .date
+     * @returns {Array} Same array, sorted
+     */
+    sortEmailsByDateDesc(emails) {
+        return emails.sort((a, b) => {
+            const tA = new Date(a.date || 0).getTime();
+            const tB = new Date(b.date || 0).getTime();
+            return tB - tA;
+        });
+    }
+
+    /**
+     * Auto-categorize emails in the background with visual progress feedback.
      * @param {Array} emails - Array of emails to categorize
      */
     async autoCategorizeEmails(emails) {
         const concurrency = 3;
         const delayMs = 400;
+        const uncachedEmails = emails.filter(e => !this.emailRepository.getCachedResult(e.id));
+        const totalToProcess = uncachedEmails.length;
+        let processed = 0;
+
+        // Show progress bar if there are emails to process
+        if (totalToProcess > 0) {
+            this.uiController.showCategorizationProgress(0, totalToProcess);
+        }
+
         for (let i = 0; i < emails.length; i += concurrency) {
             const batch = emails.slice(i, i + concurrency);
             await Promise.all(batch.map(async (email) => {
@@ -381,6 +478,10 @@ class EmailController {
                     }
                     return;
                 }
+                
+                // Show shimmer on this card
+                this.uiController.setEmailProcessing(email.id, true);
+                
                 try {
                     const results = await this.backendApiService.processEmailWithAI(email);
                     this.emailRepository.setCache(email.id, results);
@@ -391,13 +492,27 @@ class EmailController {
                     }
                 } catch (error) {
                     console.error(`Failed to auto-categorize email ${email.id}:`, error);
+                } finally {
+                    // Remove shimmer and show success flash
+                    this.uiController.setEmailProcessing(email.id, false);
+                    processed++;
+                    if (totalToProcess > 0) {
+                        this.uiController.showCategorizationProgress(processed, totalToProcess);
+                    }
                 }
             }));
+            await this.emailRepository.saveToStorage().catch((err) => console.warn('Save after batch:', err));
+            this.uiController.renderEmailList();
+            this.uiController.renderStatsDashboard(this.calculateStats());
             if (i + concurrency < emails.length) {
                 await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
         }
-        this.uiController.renderEmailList();
+
+        // Hide progress bar when done
+        if (totalToProcess > 0) {
+            setTimeout(() => this.uiController.hideCategorizationProgress(), 500);
+        }
     }
 
     /**
@@ -448,41 +563,58 @@ class EmailController {
             const card = document.createElement('div');
             card.className = 'customLabelCard';
             card.dataset.labelId = label.id;
+            
             const body = document.createElement('div');
             body.className = 'customLabelCardBody';
+            
             const nameEl = document.createElement('div');
             nameEl.className = 'customLabelCardName';
             nameEl.textContent = label.name;
+            
             const descEl = document.createElement('div');
             descEl.className = 'customLabelCardDescription';
             descEl.textContent = label.description || '';
             body.appendChild(nameEl);
             body.appendChild(descEl);
-            const addToGmailRow = document.createElement('div');
-            addToGmailRow.className = 'customLabelCardAddToGmail';
-            const addToGmailCheckbox = document.createElement('input');
-            addToGmailCheckbox.type = 'checkbox';
-            addToGmailCheckbox.id = `customLabelApply-${label.id}`;
-            addToGmailCheckbox.checked = applyToInbox;
-            addToGmailCheckbox.className = 'settingCheckbox customLabelApplyCheckbox';
-            addToGmailCheckbox.dataset.labelId = label.id;
-            const addToGmailLabel = document.createElement('label');
-            addToGmailLabel.htmlFor = addToGmailCheckbox.id;
-            addToGmailLabel.className = 'customLabelApplyLabel';
-            addToGmailLabel.textContent = 'Add to Gmail when applying labels';
-            addToGmailRow.appendChild(addToGmailCheckbox);
-            addToGmailRow.appendChild(addToGmailLabel);
-            body.appendChild(addToGmailRow);
+            
+            // Sync to Gmail toggle row
+            const syncRow = document.createElement('div');
+            syncRow.className = 'customLabelCardAddToGmail';
+            
+            const syncLabel = document.createElement('span');
+            syncLabel.className = 'customLabelApplyLabel';
+            syncLabel.textContent = 'Sync to Gmail';
+            
+            const toggleLabel = document.createElement('label');
+            toggleLabel.className = 'settingToggle settingToggleSmall';
+            
+            const toggleInput = document.createElement('input');
+            toggleInput.type = 'checkbox';
+            toggleInput.id = `customLabelApply-${label.id}`;
+            toggleInput.checked = applyToInbox;
+            toggleInput.dataset.labelId = label.id;
+            
+            const toggleSlider = document.createElement('span');
+            toggleSlider.className = 'settingToggleSlider';
+            
+            toggleLabel.appendChild(toggleInput);
+            toggleLabel.appendChild(toggleSlider);
+            
+            syncRow.appendChild(syncLabel);
+            syncRow.appendChild(toggleLabel);
+            body.appendChild(syncRow);
             card.appendChild(body);
+            
             const deleteBtn = document.createElement('button');
             deleteBtn.type = 'button';
-            deleteBtn.className = 'button small customLabelCardDelete';
-            deleteBtn.textContent = 'Remove';
+            deleteBtn.className = 'customLabelDeleteBtn';
+            deleteBtn.innerHTML = '×';
             deleteBtn.setAttribute('aria-label', `Remove label ${label.name}`);
             deleteBtn.dataset.labelId = label.id;
             card.appendChild(deleteBtn);
+            
             listEl.appendChild(card);
-            addToGmailCheckbox.addEventListener('change', (e) => this.handleCustomLabelApplyToInboxChange(label.id, e.target.checked));
+            toggleInput.addEventListener('change', (e) => this.handleCustomLabelApplyToInboxChange(label.id, e.target.checked));
         });
     }
 
@@ -575,10 +707,10 @@ class EmailController {
                 return;
             }
         }
+        emails = emails.filter((e) => e.inboxCategory === INBOX_CATEGORIES.PRIMARY);
         const delayMs = 350;
         let labeled = 0;
         for (const email of emails) {
-            if (this.emailRepository.isJobEmail(email)) continue;
             const hasLabel = email.labelIds && email.labelIds.includes(label.gmailLabelId);
             if (hasLabel) continue;
             await this.ensureEmailFullContent(email);

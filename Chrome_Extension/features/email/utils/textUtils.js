@@ -64,6 +64,8 @@ export function decodeBase64(base64String) {
 export function stripHtml(html) {
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
+    // Remove <style> and <script> so their content isn't included in textContent
+    tmp.querySelectorAll('style, script').forEach(el => el.remove());
     let text = tmp.textContent || tmp.innerText || '';
     
     // Clean up HTML entities that might not have been decoded

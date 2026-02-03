@@ -37,18 +37,18 @@ html[data-theme="light"]::before {
 }
 
 .container {
-    width: 520px;
-    min-width: 420px;
+    width: 480px;
+    min-width: 380px;
     max-width: 95vw;
-    max-height: 85vh;
-    min-height: 520px;
-    padding: 24px;
+    max-height: 90vh;
+    min-height: 480px;
+    padding: 20px;
     background: var(--decluttr-card-bg);
-    backdrop-filter: blur(15px) saturate(180%);
-    -webkit-backdrop-filter: blur(15px) saturate(180%);
-    border-radius: 20px;
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border-radius: 16px;
     border: 1px solid var(--decluttr-card-border);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     text-align: left;
     overflow-y: auto;
     position: relative;
@@ -60,121 +60,148 @@ html[data-theme="light"]::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--decluttr-surface-border);
 }
 
 .header h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 16px;
     color: var(--decluttr-text);
     flex: 1;
     text-align: center;
     font-weight: 600;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
 }
 
-/* Glass buttons */
+/* Buttons - Clean modern style */
 .button {
-    padding: 12px 20px;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
     background: var(--decluttr-surface);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     color: var(--decluttr-text);
     border: 1px solid var(--decluttr-surface-border);
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.15s ease;
 }
 
 .button:hover {
     background: var(--decluttr-input-bg);
     border-color: var(--decluttr-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    color: var(--decluttr-accent-hover);
+    color: var(--decluttr-accent);
 }
 
 .button:active {
-    transform: translateY(0);
+    transform: scale(0.98);
+}
+
+.button:focus-visible {
+    outline: 2px solid var(--decluttr-accent);
+    outline-offset: 2px;
 }
 
 .button.primary {
     width: 100%;
-    padding: 14px 24px;
-    font-size: 16px;
+    padding: 12px 20px;
+    font-size: 14px;
     margin: 10px 0;
+    background: var(--decluttr-accent);
+    color: #fff;
+    border-color: var(--decluttr-accent);
+}
+
+.button.primary:hover {
+    background: var(--decluttr-accent-hover);
+    border-color: var(--decluttr-accent-hover);
+    color: #fff;
 }
 
 .button.small {
-    padding: 8px 16px;
-    font-size: 12px;
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 6px;
 }
 
 .backButton {
-    background: var(--decluttr-input-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    color: var(--decluttr-text);
-    border: 1px solid var(--decluttr-surface-border);
-    padding: 10px 16px;
-    border-radius: 12px;
+    background: transparent;
+    color: var(--decluttr-text-muted);
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
 }
 
 .backButton:hover {
     background: var(--decluttr-surface);
-    border-color: var(--decluttr-accent);
-    transform: translateY(-2px);
-    color: var(--decluttr-accent-hover);
+    color: var(--decluttr-text);
 }
 
 .settingsButton {
-    background: var(--decluttr-input-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--decluttr-surface-border);
-    font-size: 18px;
+    background: transparent;
+    border: none;
+    font-size: 16px;
     cursor: pointer;
-    padding: 8px 12px;
-    color: var(--decluttr-text);
-    border-radius: 10px;
-    transition: all 0.3s ease;
+    padding: 6px 8px;
+    color: var(--decluttr-text-muted);
+    border-radius: 6px;
+    transition: all 0.15s ease;
 }
 
 .settingsButton:hover {
     background: var(--decluttr-surface);
-    transform: rotate(90deg);
+    color: var(--decluttr-text);
 }
 
-/* Settings Panel */
+/* ===== SETTINGS PANEL - Modern Clean Design ===== */
 .settingsPanel {
     background: var(--settings-bg);
-    padding: 20px;
-    border-radius: 16px;
-    margin-bottom: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
     border: 1px solid var(--settings-border);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.settingsPanelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--settings-border);
 }
 
 .settingsPanel h3 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
+    margin: 0;
+    font-size: 15px;
     color: var(--settings-text);
     font-weight: 600;
 }
 
+.settingsCloseBtn {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: var(--settings-text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.settingsCloseBtn:hover {
+    background: var(--settings-input-bg);
+    color: var(--settings-text);
+}
+
 .settingsSection {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .settingsSection:last-child {
@@ -182,97 +209,196 @@ html[data-theme="light"]::before {
 }
 
 .settingsSectionTitle {
-    margin: 0 0 10px 0;
-    font-size: 12px;
+    margin: 0 0 8px 0;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
     color: var(--settings-text-muted);
 }
 
-.settingItem {
-    margin-bottom: 12px;
-}
-
-.settingItem:last-child {
-    margin-bottom: 0;
-}
-
-.settingItem label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 13px;
-    color: var(--settings-text);
-    font-weight: 500;
-}
-
-.settingItemRow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.settingLabelInline {
-    flex: 1;
-    margin-bottom: 0;
-    cursor: pointer;
-}
-
-.settingSelect,
-.settingInput {
-    width: 100%;
-    padding: 10px 12px;
+/* Settings Card Container */
+.settingsCard {
     background: var(--settings-input-bg);
     border: 1px solid var(--settings-border);
     border-radius: 10px;
-    font-size: 13px;
-    color: var(--settings-text);
-    box-sizing: border-box;
+    padding: 12px;
 }
 
-.settingSelect:focus,
-.settingInput:focus {
-    outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-}
-
-.settingInputReadonly {
+.settingsCardHint {
     font-size: 11px;
-    cursor: text;
-}
-
-.settingInputRow {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.settingInputRow .settingInput {
-    flex: 1;
-    min-width: 0;
-}
-
-.settingCheckbox {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-.settingsSectionHint {
-    font-size: 12px;
     color: var(--settings-text-muted);
     margin: 0 0 12px 0;
     line-height: 1.4;
 }
 
+/* Setting Row - for toggle/select items */
+.settingRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.settingRowLabel {
+    flex: 1;
+    min-width: 0;
+}
+
+.settingRowTitle {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--settings-text);
+    margin-bottom: 2px;
+}
+
+.settingRowDesc {
+    display: block;
+    font-size: 11px;
+    color: var(--settings-text-muted);
+}
+
+/* Modern Toggle Switch */
+.settingToggle {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.settingToggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.settingToggleSlider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--settings-border);
+    border-radius: 22px;
+    transition: all 0.2s ease;
+}
+
+.settingToggleSlider::before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.settingToggle input:checked + .settingToggleSlider {
+    background: var(--decluttr-accent);
+}
+
+.settingToggle input:checked + .settingToggleSlider::before {
+    transform: translateX(18px);
+}
+
+.settingToggle input:focus-visible + .settingToggleSlider {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+/* Select dropdown */
+.settingSelect {
+    width: auto;
+    min-width: 100px;
+    padding: 6px 28px 6px 10px;
+    background: var(--settings-bg);
+    border: 1px solid var(--settings-border);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--settings-text);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+}
+
+.settingSelect:hover {
+    border-color: var(--decluttr-accent);
+}
+
+.settingSelect:focus {
+    outline: none;
+    border-color: var(--decluttr-accent);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+/* Setting Field - for text inputs */
+.settingField {
+    margin-bottom: 12px;
+}
+
+.settingField:last-child {
+    margin-bottom: 0;
+}
+
+.settingFieldLabel {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--settings-text);
+    margin-bottom: 4px;
+}
+
+.settingFieldHint {
+    font-size: 10px;
+    color: var(--settings-text-muted);
+    margin: 0 0 6px 0;
+    line-height: 1.4;
+}
+
+.settingFieldRow {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.settingInput {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    background: var(--settings-bg);
+    border: 1px solid var(--settings-border);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--settings-text);
+    box-sizing: border-box;
+}
+
+.settingInput:focus {
+    outline: none;
+    border-color: var(--decluttr-accent);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.settingInputReadonly {
+    font-size: 11px;
+    color: var(--settings-text-muted);
+    background: var(--settings-input-bg);
+}
+
 .settingTextarea {
     width: 100%;
-    padding: 10px 12px;
-    background: var(--settings-input-bg);
+    padding: 8px 10px;
+    background: var(--settings-bg);
     border: 1px solid var(--settings-border);
-    border-radius: 10px;
-    font-size: 13px;
+    border-radius: 6px;
+    font-size: 12px;
     color: var(--settings-text);
     box-sizing: border-box;
     resize: vertical;
@@ -281,12 +407,56 @@ html[data-theme="light"]::before {
 
 .settingTextarea:focus {
     outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    border-color: var(--decluttr-accent);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 
+/* Action Buttons in Settings */
+.settingsActionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--settings-bg);
+    border: 1px solid var(--settings-border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--settings-text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.settingsActionBtn:hover {
+    background: var(--decluttr-surface);
+    border-color: var(--decluttr-accent);
+    color: var(--decluttr-accent);
+}
+
+.settingsActionBtnDanger {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.settingsActionBtnDanger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* Custom Labels List */
 .customLabelsList {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+}
+
+.customLabelsList:empty {
+    display: none;
+}
+
+.customLabelsList:empty + .settingsActionBtn {
+    margin-top: 0;
 }
 
 .customLabelCard {
@@ -294,11 +464,15 @@ html[data-theme="light"]::before {
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 10px;
     margin-bottom: 8px;
-    background: var(--settings-input-bg);
+    background: var(--settings-bg);
     border: 1px solid var(--settings-border);
-    border-radius: 10px;
+    border-radius: 8px;
+}
+
+.customLabelCard:last-child {
+    margin-bottom: 0;
 }
 
 .customLabelCardBody {
@@ -308,13 +482,13 @@ html[data-theme="light"]::before {
 
 .customLabelCardName {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--settings-text);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .customLabelCardDescription {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--settings-text-muted);
     line-height: 1.35;
     white-space: pre-wrap;
@@ -324,113 +498,99 @@ html[data-theme="light"]::before {
 .customLabelCardAddToGmail {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
     margin-top: 8px;
-}
-
-.customLabelApplyLabel {
-    font-size: 12px;
-    color: var(--settings-text-muted);
-    cursor: pointer;
-    margin: 0;
-}
-
-.customLabelCardDelete {
-    flex-shrink: 0;
-}
-
-.customLabelForm {
-    margin-bottom: 12px;
-}
-
-.customLabelForm .settingItem {
-    margin-bottom: 10px;
-}
-
-.customLabelsActions {
-    margin-top: 8px;
-}
-
-.settingsSectionDeveloper {
-    padding-top: 12px;
+    padding-top: 8px;
     border-top: 1px solid var(--settings-border);
 }
 
-.settingsDeveloperToggle {
+.customLabelApplyLabel {
+    font-size: 11px;
+    color: var(--settings-text-muted);
+    margin: 0;
+}
+
+/* Small toggle for custom labels */
+.settingToggleSmall {
+    width: 32px;
+    height: 18px;
+}
+
+.settingToggleSmall .settingToggleSlider::before {
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+}
+
+.settingToggleSmall input:checked + .settingToggleSlider::before {
+    transform: translateX(14px);
+}
+
+/* Delete button for custom label */
+.customLabelDeleteBtn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--settings-text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.customLabelDeleteBtn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Collapsible Section */
+.settingsSectionCollapsible {
+    border-top: 1px solid var(--settings-border);
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.settingsSectionToggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 10px 12px;
-    background: var(--settings-input-bg);
-    border: 1px solid var(--settings-border);
-    border-radius: 10px;
-    font-size: 13px;
-    color: var(--settings-text-muted);
+    padding: 0;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    transition: background 0.2s ease;
+    text-align: left;
 }
 
-.settingsDeveloperToggle:hover {
-    background: var(--settings-border);
-    color: var(--settings-text);
+.settingsSectionToggle .settingsSectionTitle {
+    margin-bottom: 0;
 }
 
-.settingsDeveloperChevron {
-    font-size: 10px;
+.settingsSectionChevron {
+    font-size: 14px;
+    color: var(--settings-text-muted);
     transition: transform 0.2s ease;
+    font-weight: 300;
 }
 
-.settingsSectionDeveloper .settingsDeveloperToggle[aria-expanded="true"] .settingsDeveloperChevron {
-    transform: rotate(180deg);
+.settingsSectionToggle[aria-expanded="true"] .settingsSectionChevron {
+    transform: rotate(90deg);
 }
 
-.settingsDeveloperContent {
+.settingsSectionContent {
     margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px dashed var(--settings-border);
 }
 
-.settingsDeveloperHint {
-    margin: 0 0 12px 0;
-    font-size: 12px;
-    color: var(--settings-text-muted);
-    line-height: 1.5;
-}
-
-.saveButton {
-    width: 100%;
-    padding: 10px;
-    background: #059669;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    margin-top: 8px;
-    transition: background 0.2s ease;
-}
-
-.saveButton:hover {
-    background: #047857;
-}
-
-.logoutButton {
-    width: 100%;
-    padding: 10px;
-    background: #dc2626;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: background 0.2s ease;
-}
-
-.logoutButton:hover {
-    background: #b91c1c;
+.settingsSectionContent .settingsCard {
+    margin-top: 0;
 }
 
 /* Auth Section */
@@ -509,61 +669,401 @@ html[data-theme="dark"] .successMessage { color: #bbf7d0; }
     margin-top: 15px;
 }
 
-/* Inbox Tabs */
-.inboxTabs {
+/* ===== CATEGORIZATION PROGRESS ===== */
+.categorizationProgress {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: var(--decluttr-surface);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid var(--decluttr-surface-border);
+    animation: progressSlideIn 0.3s ease-out;
+}
+
+@keyframes progressSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.categorizationProgressHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.categorizationProgressLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--decluttr-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.categorizationProgressLabel::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--decluttr-accent);
+    border-radius: 50%;
+    animation: progressPulse 1s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+.categorizationProgressCount {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--decluttr-text-muted);
+}
+
+.categorizationProgressBar {
+    height: 6px;
+    background: var(--decluttr-input-bg);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.categorizationProgressFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--decluttr-accent), #8b5cf6);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.categorizationProgressFill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: progressShine 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+/* ===== EMAIL CARD PROCESSING SHIMMER ===== */
+.emailCard.processing {
+    position: relative;
+    overflow: hidden;
+}
+
+.emailCard.processing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(99, 102, 241, 0.1),
+        rgba(99, 102, 241, 0.2),
+        rgba(99, 102, 241, 0.1),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    to {
+        left: 100%;
+    }
+}
+
+/* Success flash on categorization complete */
+.emailCard.categorized {
+    animation: categorizedFlash 0.6s ease-out;
+}
+
+@keyframes categorizedFlash {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.2);
+    }
+    100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* Category change slide animation */
+.emailCard.sliding-out {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+}
+
+/* ===== STATS DASHBOARD - Minimal Design ===== */
+.statsDashboard {
+    margin-bottom: 16px;
+    animation: statsDashboardFadeIn 0.4s ease-out;
+}
+
+@keyframes statsDashboardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.statsGrid {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--decluttr-surface-border);
-    padding-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.statCard {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--decluttr-surface);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 10px;
+    border: 1px solid var(--decluttr-surface-border);
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 100px;
+}
+
+.statCard:hover {
+    border-color: var(--stat-color, var(--decluttr-accent));
+    background: var(--decluttr-input-bg);
+}
+
+.statCardTotal {
+    --stat-color: #3b82f6;
+}
+
+.statCardJobs {
+    --stat-color: #8b5cf6;
+}
+
+.statCardResponse {
+    --stat-color: #10b981;
+}
+
+.statIcon {
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--decluttr-input-bg);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.statContent {
+    flex: 1;
+    min-width: 0;
+}
+
+.statValue {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--decluttr-text);
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+}
+
+.statLabel {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--decluttr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Mini chart for job breakdown */
+.statMiniChart {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 20px;
+    margin-left: auto;
+}
+
+.statMiniBar {
+    width: 4px;
+    border-radius: 2px;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.statMiniBar.applied {
+    background: #6366f1;
+}
+
+.statMiniBar.interview {
+    background: #10b981;
+}
+
+.statMiniBar.offer {
+    background: #f59e0b;
+}
+
+.statMiniBar.rejected {
+    background: #ef4444;
+}
+
+/* Animated number counter effect */
+.statValue[data-animate="true"] {
+    animation: statValuePop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes statValuePop {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Inbox Tabs - Clean pill style */
+.inboxTabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+    background: var(--decluttr-input-bg);
+    border-radius: 10px;
+    flex-wrap: wrap;
 }
 
 .inboxTab {
+    position: relative;
     background: transparent;
     border: none;
     color: var(--decluttr-text-muted);
-    padding: 8px 16px;
+    padding: 6px 12px;
     cursor: pointer;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.2s ease;
+    border-radius: 7px;
+    transition: all 0.15s ease;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .inboxTab:hover {
-    background: var(--decluttr-input-bg);
+    background: var(--decluttr-surface);
     color: var(--decluttr-text);
 }
 
 .inboxTab.active {
     background: var(--decluttr-surface);
     color: var(--decluttr-text);
-    border-bottom: 2px solid var(--decluttr-accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Tab count badge */
+.tabCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 9px;
+    font-weight: 600;
+    background: var(--decluttr-surface-border);
+    border-radius: 8px;
+    color: var(--decluttr-text-muted);
+    transition: all 0.15s ease;
+}
+
+.inboxTab.active .tabCount {
+    background: var(--decluttr-accent);
+    color: #fff;
+}
+
+.inboxTab:hover .tabCount {
+    background: var(--decluttr-surface-border);
 }
 
 .inboxTabAdd {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
     padding: 0;
     margin: 0;
-    margin-left: 4px;
-    background: var(--decluttr-surface);
-    border: 1px solid var(--decluttr-surface-border);
-    border-radius: 8px;
+    background: transparent;
+    border: 1px dashed var(--decluttr-surface-border);
+    border-radius: 7px;
     color: var(--decluttr-text-muted);
-    font-size: 18px;
+    font-size: 14px;
     line-height: 1;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.15s ease;
 }
 
 .inboxTabAdd:hover {
-    background: var(--decluttr-input-bg);
+    background: var(--decluttr-surface);
     color: var(--decluttr-text);
+    border-style: solid;
     border-color: var(--decluttr-accent);
 }
 
@@ -571,19 +1071,17 @@ html[data-theme="dark"] .successMessage { color: #bbf7d0; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--decluttr-surface-border);
+    margin-bottom: 12px;
 }
 
 .accountEmail {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--decluttr-text-muted);
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .emailList {
-    max-height: 400px;
+    max-height: 420px;
     overflow-y: auto;
 }
 
@@ -793,25 +1291,36 @@ html[data-theme="dark"] .successMessage { color: #bbf7d0; }
     text-decoration: none;
 }
 
-/* Email Card - theme-aware */
+/* Email Card - Clean minimal design */
 .emailCard {
     background: var(--decluttr-surface);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--decluttr-surface-border);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    opacity: 0;
+    animation: emailCardEntrance 0.3s ease-out forwards;
+}
+
+/* Staggered entrance animation - applied via inline style */
+@keyframes emailCardEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .emailCard:hover {
     background: var(--decluttr-input-bg);
     border-color: var(--decluttr-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .emailCard.expanded {
@@ -822,196 +1331,320 @@ html[data-theme="dark"] .successMessage { color: #bbf7d0; }
 .emailCardHeader {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
+    align-items: center;
+    margin-bottom: 4px;
+    gap: 8px;
 }
 
 .emailSubject {
-    font-weight: 700;
-    font-size: 15px;
+    font-weight: 600;
+    font-size: 14px;
     color: var(--decluttr-text);
     flex: 1;
-    margin-right: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.3;
 }
 
 .emailDate {
     font-size: 11px;
     color: var(--decluttr-text-muted);
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: 400;
+    flex-shrink: 0;
 }
 
 .emailSender {
-    font-size: 13px;
-    color: var(--decluttr-text);
-    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--decluttr-text-muted);
+    margin-bottom: 6px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .emailPreview {
     font-size: 13px;
     color: var(--decluttr-text-muted);
-    margin-bottom: 8px;
+    margin-bottom: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.5;
+    line-height: 1.4;
+}
+
+/* Email card with badges - add margin */
+.emailCard .emailPreview:has(+ .emailActions .emailBadges:not(:empty)) {
+    margin-bottom: 8px;
+}
+
+.emailActions {
+    margin-top: 10px;
+}
+
+.emailActions:empty {
+    display: none;
 }
 
 /* Email Badges Container */
 .emailBadges {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 8px;
     align-items: center;
 }
 
 /* Category Badge - theme-aware for contrast */
 .categoryBadge {
     display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
     font-weight: 600;
     flex-shrink: 0;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 html[data-theme="dark"] .categoryBadge {
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 html[data-theme="light"] .categoryBadge {
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .categoryBadge.personal {
-    background: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.2);
 }
-html[data-theme="dark"] .categoryBadge.personal { color: #bbf7d0; }
+html[data-theme="dark"] .categoryBadge.personal { color: #86efac; }
 html[data-theme="light"] .categoryBadge.personal { color: #166534; }
 
 .categoryBadge.promotional {
-    background: rgba(255, 193, 7, 0.35);
+    background: rgba(255, 193, 7, 0.2);
 }
-html[data-theme="dark"] .categoryBadge.promotional { color: #fef08a; }
+html[data-theme="dark"] .categoryBadge.promotional { color: #fde047; }
 html[data-theme="light"] .categoryBadge.promotional { color: #854d0e; }
 
 .categoryBadge.spam {
-    background: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.2);
 }
-html[data-theme="dark"] .categoryBadge.spam { color: #fecaca; }
+html[data-theme="dark"] .categoryBadge.spam { color: #fca5a5; }
 html[data-theme="light"] .categoryBadge.spam { color: #991b1b; }
 
 .categoryBadge.newsletter {
-    background: rgba(0, 188, 212, 0.35);
+    background: rgba(0, 188, 212, 0.2);
 }
-html[data-theme="dark"] .categoryBadge.newsletter { color: #a5f3fc; }
+html[data-theme="dark"] .categoryBadge.newsletter { color: #67e8f9; }
 html[data-theme="light"] .categoryBadge.newsletter { color: #155e75; }
 
 .categoryBadge.other {
-    background: rgba(148, 163, 184, 0.35);
+    background: rgba(148, 163, 184, 0.2);
 }
-html[data-theme="dark"] .categoryBadge.other { color: #e2e8f0; }
+html[data-theme="dark"] .categoryBadge.other { color: #cbd5e1; }
 html[data-theme="light"] .categoryBadge.other { color: #475569; }
 
-/* Job application label */
+/* Job application badge - clickable dropdown style */
 .jobApplicationBadge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
     font-weight: 600;
-    background: rgba(99, 102, 241, 0.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(99, 102, 241, 0.5);
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
     flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    cursor: default;
 }
-html[data-theme="dark"] .jobApplicationBadge { color: #c7d2fe; }
-html[data-theme="light"] .jobApplicationBadge { color: #3730a3; }
+html[data-theme="dark"] .jobApplicationBadge { color: #a5b4fc; }
+html[data-theme="light"] .jobApplicationBadge { color: #4338ca; }
+
+/* Editable job badge (in Job tab) */
+.jobApplicationBadge.editable {
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding-right: 6px;
+}
+
+.jobApplicationBadge.editable:hover {
+    background: rgba(99, 102, 241, 0.35);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.jobApplicationBadge.editable::after {
+    content: '▼';
+    font-size: 7px;
+    opacity: 0.7;
+    margin-left: 2px;
+}
+
+/* Job Label Selector Dropdown */
+.jobLabelSelector {
+    position: relative;
+    display: inline-block;
+}
+
+.jobLabelDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 100;
+    min-width: 160px;
+    background: var(--decluttr-card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--decluttr-surface-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: all 0.15s ease;
+}
+
+.jobLabelDropdown.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.jobLabelOption {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--decluttr-text);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s ease;
+}
+
+.jobLabelOption:hover {
+    background: var(--decluttr-input-bg);
+}
+
+.jobLabelOption.selected {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--decluttr-accent);
+}
+
+.jobLabelOption.selected::before {
+    content: '✓ ';
+}
+
+/* Stage-specific badge colors */
+.jobApplicationBadge[data-stage="interview"],
+.jobApplicationBadge[data-stage="oa_screening"] {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+html[data-theme="dark"] .jobApplicationBadge[data-stage="interview"],
+html[data-theme="dark"] .jobApplicationBadge[data-stage="oa_screening"] { color: #6ee7b7; }
+html[data-theme="light"] .jobApplicationBadge[data-stage="interview"],
+html[data-theme="light"] .jobApplicationBadge[data-stage="oa_screening"] { color: #047857; }
+
+.jobApplicationBadge[data-stage="offer"],
+.jobApplicationBadge[data-stage="accepted"] {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+html[data-theme="dark"] .jobApplicationBadge[data-stage="offer"],
+html[data-theme="dark"] .jobApplicationBadge[data-stage="accepted"] { color: #fcd34d; }
+html[data-theme="light"] .jobApplicationBadge[data-stage="offer"],
+html[data-theme="light"] .jobApplicationBadge[data-stage="accepted"] { color: #b45309; }
+
+.jobApplicationBadge[data-stage="rejected"],
+.jobApplicationBadge[data-stage="declined"] {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+html[data-theme="dark"] .jobApplicationBadge[data-stage="rejected"],
+html[data-theme="dark"] .jobApplicationBadge[data-stage="declined"] { color: #fca5a5; }
+html[data-theme="light"] .jobApplicationBadge[data-stage="rejected"],
+html[data-theme="light"] .jobApplicationBadge[data-stage="declined"] { color: #b91c1c; }
 
 /* Unsubscribe Indicator */
 .unsubscribeBadge {
     display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
     font-weight: 600;
-    background: rgba(255, 152, 0, 0.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 152, 0, 0.5);
+    background: rgba(255, 152, 0, 0.2);
+    border: 1px solid rgba(255, 152, 0, 0.3);
     flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
-html[data-theme="dark"] .unsubscribeBadge { color: #fed7aa; }
-html[data-theme="light"] .unsubscribeBadge { color: #9a3412; }
+html[data-theme="dark"] .unsubscribeBadge { color: #fdba74; }
+html[data-theme="light"] .unsubscribeBadge { color: #c2410c; }
 
 .unsubscribeLink {
-    display: block;
+    display: inline-block;
     margin-top: 8px;
-    padding: 8px 16px;
-    background: rgba(255, 152, 0, 0.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 152, 0, 0.5);
-    color: var(--decluttr-text);
+    padding: 6px 12px;
+    background: var(--decluttr-surface);
+    border: 1px solid var(--decluttr-surface-border);
+    color: var(--decluttr-text-muted);
     text-decoration: none;
-    border-radius: 12px;
+    border-radius: 8px;
     font-size: 12px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
+    transition: all 0.15s ease;
+    font-weight: 500;
 }
 
 .unsubscribeLink:hover {
-    background: rgba(255, 152, 0, 0.5);
-    transform: translateY(-2px);
+    background: var(--decluttr-input-bg);
+    border-color: var(--decluttr-accent);
+    color: var(--decluttr-text);
 }
 
 /* AI Results Section */
 .aiResults {
-    margin-top: 15px;
-    padding-top: 15px;
+    margin-top: 12px;
+    padding-top: 12px;
     border-top: 1px solid var(--decluttr-surface-border);
 }
 
 .aiResults h4 {
-    font-size: 15px;
-    color: var(--decluttr-text);
-    margin: 0 0 12px 0;
-    font-weight: 700;
+    font-size: 12px;
+    color: var(--decluttr-text-muted);
+    margin: 0 0 10px 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .aiSummary {
     background: var(--decluttr-input-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 14px;
-    border-radius: 12px;
-    margin-bottom: 10px;
+    padding: 12px;
+    border-radius: 8px;
     font-size: 13px;
     color: var(--decluttr-text);
-    line-height: 1.7;
+    line-height: 1.5;
     border: 1px solid var(--decluttr-surface-border);
     font-weight: 400;
 }
 
 .aiSummary strong {
-    color: var(--decluttr-accent);
-    font-weight: 600;
+    color: var(--decluttr-text);
+    font-weight: 500;
 }
 
 /* Empty State */
@@ -1195,9 +1828,9 @@ html[data-theme="light"] .unsubscribeBadge { color: #9a3412; }
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1000;
     display: flex;
     justify-content: center;
@@ -1207,45 +1840,42 @@ html[data-theme="light"] .unsubscribeBadge { color: #9a3412; }
 
 .modalContent {
     background: var(--decluttr-card-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid var(--decluttr-surface-border);
-    border-radius: 20px;
-    padding: 24px;
-    max-width: 500px;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 460px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
     margin: 20px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
 }
 
 .closeButton {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: var(--decluttr-input-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--decluttr-surface-border);
-    font-size: 24px;
+    background: transparent;
+    border: none;
+    font-size: 20px;
     cursor: pointer;
-    color: var(--decluttr-accent);
-    width: 32px;
-    height: 32px;
+    color: var(--decluttr-text-muted);
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    font-weight: 400;
 }
 
 .closeButton:hover {
     background: var(--decluttr-surface);
-    color: var(--decluttr-accent-hover);
-    transform: rotate(90deg);
+    color: var(--decluttr-text);
 }
 
 .addCustomLabelModalContent {
@@ -1278,44 +1908,44 @@ html[data-theme="light"] .unsubscribeBadge { color: #9a3412; }
 }
 
 .modalHeader {
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--decluttr-surface-border);
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--decluttr-surface-border);
+    padding-right: 28px;
 }
 
 .modalHeader h3 {
-    margin: 0 0 10px 0;
-    font-size: 20px;
+    margin: 0 0 8px 0;
+    font-size: 16px;
     color: var(--decluttr-text);
-    font-weight: 700;
+    font-weight: 600;
+    line-height: 1.3;
 }
 
 .modalMeta {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    font-size: 13px;
-    color: var(--decluttr-accent);
-    font-weight: 500;
+    gap: 3px;
+    font-size: 12px;
+    color: var(--decluttr-text-muted);
+    font-weight: 400;
 }
 
 .modalBody {
-    margin-top: 15px;
+    margin-top: 12px;
 }
 
 .emailContent {
     background: var(--decluttr-input-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    font-size: 14px;
-    line-height: 1.7;
+    padding: 14px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.6;
     color: var(--decluttr-text);
     white-space: pre-wrap;
     word-wrap: break-word;
-    max-height: 300px;
+    max-height: 280px;
     overflow-y: auto;
     border: 1px solid var(--decluttr-surface-border);
     font-weight: 400;

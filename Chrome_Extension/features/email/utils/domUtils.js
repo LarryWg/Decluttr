@@ -10,6 +10,7 @@ export class DOMReferences {
         this.backBtn = document.getElementById('backBtn');
         this.settingsBtn = document.getElementById('settingsBtn');
         this.settingsPanel = document.getElementById('settingsPanel');
+        this.settingsCloseBtn = document.getElementById('settingsCloseBtn');
         this.themeSelect = document.getElementById('themeSelect');
         this.autoCategorizeCheckbox = document.getElementById('autoCategorizeCheckbox');
         this.developerOptionsToggle = document.getElementById('developerOptionsToggle');
@@ -66,6 +67,16 @@ export class DOMReferences {
         this.addCustomLabelModalDescription = document.getElementById('addCustomLabelModalDescription');
         this.cancelAddCustomLabelModalBtn = document.getElementById('cancelAddCustomLabelModalBtn');
         this.confirmAddCustomLabelModalBtn = document.getElementById('confirmAddCustomLabelModalBtn');
+        // Categorization Progress
+        this.categorizationProgress = document.getElementById('categorizationProgress');
+        this.categorizationProgressCount = document.getElementById('categorizationProgressCount');
+        this.categorizationProgressFill = document.getElementById('categorizationProgressFill');
+        // Stats Dashboard
+        this.statsDashboard = document.getElementById('statsDashboard');
+        this.statTotalEmails = document.getElementById('statTotalEmails');
+        this.statJobApps = document.getElementById('statJobApps');
+        this.statJobMiniChart = document.getElementById('statJobMiniChart');
+        this.statResponseRate = document.getElementById('statResponseRate');
     }
 }
 

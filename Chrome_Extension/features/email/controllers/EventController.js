@@ -1,4 +1,5 @@
 import { setTheme } from '../../../utils/theme.js';
+import { initKeyboardShortcuts, highlightEmailCard } from '../utils/keyboardShortcuts.js';
 
 /**
  * Event Controller - Handles all event listeners setup
@@ -9,6 +10,7 @@ export class EventController {
         this.emailController = emailController;
         this.settingsService = settingsService;
         this.uiController = uiController;
+        this.keyboardHandler = null;
     }
 
     /**
@@ -28,6 +30,13 @@ export class EventController {
                 await this.emailController.renderCustomLabelsList();
             }
         });
+
+        // Settings close button
+        if (this.domRefs.settingsCloseBtn) {
+            this.domRefs.settingsCloseBtn.addEventListener('click', () => {
+                this.domRefs.settingsPanel.style.display = 'none';
+            });
+        }
 
         if (this.domRefs.themeSelect) {
             this.domRefs.themeSelect.addEventListener('change', async () => {
@@ -95,7 +104,7 @@ export class EventController {
         }
         if (this.domRefs.customLabelsList) {
             this.domRefs.customLabelsList.addEventListener('click', (e) => {
-                const btn = e.target.closest('.customLabelCardDelete');
+                const btn = e.target.closest('.customLabelDeleteBtn');
                 if (btn && btn.dataset.labelId) {
                     this.emailController.handleRemoveCustomLabel(btn.dataset.labelId);
                 }
@@ -259,6 +268,56 @@ export class EventController {
                 this.emailController.refreshPipelineView();
             });
         }
+
+        // Action items panel toggle
+        if (this.domRefs.actionItemsToggle) {
+            this.domRefs.actionItemsToggle.addEventListener('click', () => {
+                this.domRefs.actionItemsPanel?.classList.toggle('expanded');
+            });
+        }
+
+        // Keyboard shortcuts
+        this.keyboardHandler = initKeyboardShortcuts({
+            onRefresh: () => {
+                this.emailController.fetchAndDisplayEmails();
+            },
+            onNextEmail: (currentIndex) => {
+                const cards = document.querySelectorAll('.emailCard');
+                const newIndex = Math.min(currentIndex + 1, cards.length - 1);
+                return highlightEmailCard(Math.max(0, newIndex));
+            },
+            onPrevEmail: (currentIndex) => {
+                const newIndex = Math.max(currentIndex - 1, 0);
+                return highlightEmailCard(newIndex);
+            },
+            onViewDetails: (currentIndex) => {
+                const cards = document.querySelectorAll('.emailCard');
+                if (currentIndex >= 0 && currentIndex < cards.length) {
+                    const card = cards[currentIndex];
+                    const viewBtn = card.querySelector('.viewEmailBtn');
+                    if (viewBtn) viewBtn.click();
+                }
+            },
+            onEscape: () => {
+                // Close any open modals or panels
+                if (this.domRefs.settingsPanel?.style.display !== 'none') {
+                    this.domRefs.settingsPanel.style.display = 'none';
+                    return;
+                }
+                if (this.domRefs.emailModal) this.domRefs.emailModal.style.display = 'none';
+                if (this.domRefs.unsubscribeModal) this.domRefs.unsubscribeModal.style.display = 'none';
+                if (this.domRefs.addCustomLabelModal) this.domRefs.addCustomLabelModal.style.display = 'none';
+            },
+            onSwitchTab: (tab) => {
+                this.emailController.switchInbox(tab);
+            },
+            onShowHelp: () => {
+                this.uiController.showSuccess(
+                    'Keyboard shortcuts: j/↓ = next, k/↑ = prev, Enter = view, r = refresh, 1-5 = tabs, Esc = close'
+                );
+                setTimeout(() => this.uiController.hideSuccess(), 4000);
+            }
+        });
     }
 }
 

@@ -18,63 +18,92 @@
 
         <!-- Settings Panel (hidden by default) -->
         <div class="settingsPanel" id="settingsPanel" style="display: none;">
-            <h3>Settings</h3>
+            <div class="settingsPanelHeader">
+                <h3>Settings</h3>
+                <button type="button" class="settingsCloseBtn" id="settingsCloseBtn" aria-label="Close settings">×</button>
+            </div>
 
-            <section class="settingsSection">
-                <h4 class="settingsSectionTitle">Account</h4>
-                <div class="settingItem">
-                    <button class="logoutButton" id="logoutBtn">Log out from Gmail</button>
-                </div>
-            </section>
-
+            <!-- General Settings -->
             <section class="settingsSection">
                 <h4 class="settingsSectionTitle">Appearance</h4>
-                <div class="settingItem">
-                    <label for="themeSelect">Theme</label>
-                    <select id="themeSelect" class="settingSelect">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="system">System</option>
-                    </select>
+                <div class="settingsCard">
+                    <div class="settingRow">
+                        <div class="settingRowLabel">
+                            <span class="settingRowTitle">Theme</span>
+                            <span class="settingRowDesc">Choose light, dark, or match your system</span>
+                        </div>
+                        <select id="themeSelect" class="settingSelect">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="system">System</option>
+                        </select>
+                    </div>
                 </div>
             </section>
 
             <section class="settingsSection">
-                <h4 class="settingsSectionTitle">Behavior</h4>
-                <div class="settingItem settingItemRow">
-                    <label for="autoCategorizeCheckbox" class="settingLabelInline">Auto-categorize emails on load</label>
-                    <input type="checkbox" id="autoCategorizeCheckbox" class="settingCheckbox" checked>
-                </div>
-            </section>
-
-            <section class="settingsSection" id="customLabelsSection">
-                <h4 class="settingsSectionTitle">Custom auto-labels</h4>
-                <p class="settingsSectionHint">Use the + beside Pipeline to add labels. Toggle &ldquo;Add to Gmail&rdquo; and run &ldquo;Apply labels to inbox&rdquo; to update Gmail.</p>
-                <div class="customLabelsList" id="customLabelsList">
-                    <!-- Custom labels rendered here -->
-                </div>
-                <div class="customLabelsActions">
-                    <button type="button" class="button small" id="applyCustomLabelsBtn">Apply labels to inbox</button>
-                </div>
-            </section>
-
-            <section class="settingsSection settingsSectionDeveloper">
-                <button type="button" class="settingsDeveloperToggle" id="developerOptionsToggle" aria-expanded="false">
-                    <span>Developer options</span>
-                    <span class="settingsDeveloperChevron" aria-hidden="true">▼</span>
-                </button>
-                <div class="settingsDeveloperContent" id="developerOptionsContent" hidden>
-                    <p class="settingsDeveloperHint">Copy the redirect URI below and add it to your OAuth client in Google Cloud Console (Credentials → your OAuth 2.0 Client ID → Authorized redirect URIs). If you have multiple clients for different testers, add this same URI to each one. After that, testers can connect Gmail without setup.</p>
-                    <div class="settingItem">
-                        <label for="backendUrlInput">Backend URL</label>
-                        <input type="text" id="backendUrlInput" value="http://localhost:3000" placeholder="http://localhost:3000" class="settingInput" />
-                        <button class="saveButton" id="saveBackendUrlBtn">Save</button>
+                <h4 class="settingsSectionTitle">Automation</h4>
+                <div class="settingsCard">
+                    <div class="settingRow">
+                        <div class="settingRowLabel">
+                            <span class="settingRowTitle">Auto-categorize</span>
+                            <span class="settingRowDesc">Automatically sort emails when loaded</span>
+                        </div>
+                        <label class="settingToggle">
+                            <input type="checkbox" id="autoCategorizeCheckbox" checked>
+                            <span class="settingToggleSlider"></span>
+                        </label>
                     </div>
-                    <div class="settingItem">
-                        <label for="redirectUriDisplay">Redirect URI</label>
-                        <div class="settingInputRow">
-                            <input type="text" id="redirectUriDisplay" readonly class="settingInput settingInputReadonly" />
-                            <button type="button" class="button small" id="copyRedirectUriBtn">Copy</button>
+                </div>
+            </section>
+
+            <!-- Custom Labels -->
+            <section class="settingsSection" id="customLabelsSection">
+                <h4 class="settingsSectionTitle">Custom Labels</h4>
+                <div class="settingsCard">
+                    <p class="settingsCardHint">Create labels using the + button in the tab bar. Enable "Sync to Gmail" to add labels in your Gmail account.</p>
+                    <div class="customLabelsList" id="customLabelsList">
+                        <!-- Custom labels rendered here -->
+                    </div>
+                    <button type="button" class="settingsActionBtn" id="applyCustomLabelsBtn">
+                        Apply labels to inbox
+                    </button>
+                </div>
+            </section>
+
+            <!-- Account -->
+            <section class="settingsSection">
+                <h4 class="settingsSectionTitle">Account</h4>
+                <div class="settingsCard">
+                    <button type="button" class="settingsActionBtn settingsActionBtnDanger" id="logoutBtn">
+                        Sign out of Gmail
+                    </button>
+                </div>
+            </section>
+
+            <!-- Developer Options -->
+            <section class="settingsSection settingsSectionCollapsible">
+                <button type="button" class="settingsSectionToggle" id="developerOptionsToggle" aria-expanded="false">
+                    <h4 class="settingsSectionTitle">Developer</h4>
+                    <span class="settingsSectionChevron">›</span>
+                </button>
+                <div class="settingsSectionContent" id="developerOptionsContent" hidden>
+                    <div class="settingsCard">
+                        <p class="settingsCardHint">Configure backend connection for development and testing.</p>
+                        <div class="settingField">
+                            <label for="backendUrlInput" class="settingFieldLabel">Backend URL</label>
+                            <div class="settingFieldRow">
+                                <input type="text" id="backendUrlInput" value="http://localhost:3000" placeholder="http://localhost:3000" class="settingInput" />
+                                <button type="button" class="button small" id="saveBackendUrlBtn">Save</button>
+                            </div>
+                        </div>
+                        <div class="settingField">
+                            <label for="redirectUriDisplay" class="settingFieldLabel">OAuth Redirect URI</label>
+                            <p class="settingFieldHint">Add this URI to your Google Cloud Console OAuth credentials.</p>
+                            <div class="settingFieldRow">
+                                <input type="text" id="redirectUriDisplay" readonly class="settingInput settingInputReadonly" />
+                                <button type="button" class="button small" id="copyRedirectUriBtn">Copy</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -106,6 +135,46 @@
                 <span id="accountEmail" class="accountEmail"></span>
                 <button class="button small" id="refreshBtn">Refresh</button>
             </div>
+
+            <!-- Categorization Progress Bar -->
+            <div class="categorizationProgress" id="categorizationProgress" style="display: none;">
+                <div class="categorizationProgressHeader">
+                    <span class="categorizationProgressLabel">AI Categorizing</span>
+                    <span class="categorizationProgressCount" id="categorizationProgressCount">0/0</span>
+                </div>
+                <div class="categorizationProgressBar">
+                    <div class="categorizationProgressFill" id="categorizationProgressFill"></div>
+                </div>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="statsDashboard" id="statsDashboard">
+                <div class="statsGrid">
+                    <div class="statCard statCardTotal">
+                        <div class="statIcon">📧</div>
+                        <div class="statContent">
+                            <div class="statValue" id="statTotalEmails">0</div>
+                            <div class="statLabel">Emails Processed</div>
+                        </div>
+                    </div>
+                    <div class="statCard statCardJobs">
+                        <div class="statIcon">💼</div>
+                        <div class="statContent">
+                            <div class="statValue" id="statJobApps">0</div>
+                            <div class="statLabel">Job Applications</div>
+                        </div>
+                        <div class="statMiniChart" id="statJobMiniChart"></div>
+                    </div>
+                    <div class="statCard statCardResponse">
+                        <div class="statIcon">📈</div>
+                        <div class="statContent">
+                            <div class="statValue" id="statResponseRate">0%</div>
+                            <div class="statLabel">Response Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="inboxTabs" id="inboxTabs">
                 <button class="inboxTab active" data-inbox="primary">Primary</button>
                 <button class="inboxTab" data-inbox="promotions">Promotions</button>

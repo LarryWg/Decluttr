@@ -6,7 +6,7 @@ import { escapeHtml, convertUrlsToLinks } from '../utils/textUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 
 export class UIController {
-    constructor(domRefs, emailRepository, emailClassificationService, backendApiService, unsubscribeService, onJobEmailClassified = null, onBeforeShowEmailModal = null) {
+    constructor(domRefs, emailRepository, emailClassificationService, backendApiService, unsubscribeService, onJobEmailClassified = null, onBeforeShowEmailModal = null, onPipelineNeedsRefresh = null) {
         this.domRefs = domRefs;
         this.emailRepository = emailRepository;
         this.emailClassificationService = emailClassificationService;
@@ -14,6 +14,24 @@ export class UIController {
         this.unsubscribeService = unsubscribeService;
         this.onJobEmailClassified = onJobEmailClassified;
         this.onBeforeShowEmailModal = onBeforeShowEmailModal;
+        this.onPipelineNeedsRefresh = onPipelineNeedsRefresh;
+        this.openDropdownId = null; // Track which dropdown is open
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.jobLabelSelector')) {
+                this.closeAllDropdowns();
+            }
+        });
+    }
+
+    /**
+     * Close all open label dropdowns.
+     */
+    closeAllDropdowns() {
+        const dropdowns = document.querySelectorAll('.jobLabelDropdown.open');
+        dropdowns.forEach(d => d.classList.remove('open'));
+        this.openDropdownId = null;
     }
 
     /**
@@ -53,9 +71,12 @@ export class UIController {
         this.domRefs.emptyState.style.display = 'none';
         this.domRefs.emailListSection.style.display = 'block';
         
-        // Display filtered emails
-        filteredEmails.forEach(email => {
+        // Display filtered emails with staggered entrance animation
+        filteredEmails.forEach((email, index) => {
             const emailCard = this.createEmailCard(email);
+            // Stagger animation delay (max 500ms to keep it snappy)
+            const delay = Math.min(index * 40, 500);
+            emailCard.style.animationDelay = `${delay}ms`;
             this.domRefs.emailList.appendChild(emailCard);
         });
         
@@ -79,13 +100,17 @@ export class UIController {
         // Check if we have cached AI results
         const cachedResults = this.emailRepository.getCachedResult(email.id);
         const category = cachedResults ? cachedResults.category : null;
-        const jobType = cachedResults ? cachedResults.jobType : null;
+        const jobType = cachedResults ? (cachedResults.userOverrideJobType || cachedResults.jobType) : null;
         const hasUnsubscribe = cachedResults ? cachedResults.hasUnsubscribe : false;
         const isJobApplication = category === 'Job' || email.inboxCategory === INBOX_CATEGORIES.JOB || (jobType && VALID_JOB_TYPES.includes(jobType));
         const jobStageLabel = isJobApplication && jobType && JOB_TYPE_LABELS[jobType] ? JOB_TYPE_LABELS[jobType] : (isJobApplication ? 'Applications Sent' : null);
+        const jobStageKey = jobType || 'applications_sent';
 
         // Format date (relative time)
         const dateStr = formatDate(email.date);
+
+        // Check if we're in job tab (editable badges)
+        const isJobTab = this.emailRepository.getSelectedInbox() === INBOX_CATEGORIES.JOB;
 
         card.innerHTML = `
             <div class="emailCardHeader">
@@ -96,29 +121,117 @@ export class UIController {
             <div class="emailPreview">${escapeHtml(email.snippet)}</div>
             <div class="emailActions">
                 <div class="emailBadges">
-                    ${jobStageLabel ? `<span class="jobApplicationBadge">${escapeHtml(jobStageLabel)}</span>` : ''}
-                    ${hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe Available</span>' : ''}
+                    ${jobStageLabel ? this._createJobBadgeHtml(email.id, jobStageLabel, jobStageKey, isJobTab) : ''}
+                    ${hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe</span>' : ''}
                 </div>
-                <button class="button small processEmailBtn" style="margin-top: 8px; width: 100%;">Process with AI</button>
-                <button class="button small viewEmailBtn" style="margin-top: 4px; width: 100%;">View Details</button>
             </div>
         `;
 
-        // Add event listeners
-        const processBtn = card.querySelector('.processEmailBtn');
-        const viewBtn = card.querySelector('.viewEmailBtn');
-
-        processBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await this.handleProcessEmail(email, card);
-        });
-
-        viewBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
+        // Add click handler for the whole card to open modal
+        card.addEventListener('click', async (e) => {
+            // Don't open modal if clicking on dropdown or badge
+            if (e.target.closest('.jobLabelSelector') || e.target.closest('.jobLabelDropdown')) {
+                return;
+            }
             await this.showEmailModal(email);
         });
 
+        // Add job label dropdown functionality if in job tab
+        if (isJobTab && jobStageLabel) {
+            this._setupJobLabelDropdown(card, email);
+        }
+
         return card;
+    }
+
+    /**
+     * Create HTML for job application badge (editable or not).
+     * @param {string} emailId - Email ID
+     * @param {string} label - Display label
+     * @param {string} stageKey - The job type key
+     * @param {boolean} editable - Whether the badge should be editable
+     * @returns {string} HTML string
+     */
+    _createJobBadgeHtml(emailId, label, stageKey, editable) {
+        if (!editable) {
+            return `<span class="jobApplicationBadge" data-stage="${escapeHtml(stageKey)}">${escapeHtml(label)}</span>`;
+        }
+        
+        // Build dropdown options
+        const options = Object.entries(JOB_TYPE_LABELS)
+            .filter(([key]) => !['application_confirmation', 'rejection'].includes(key)) // Hide duplicates
+            .map(([key, value]) => {
+                const selected = key === stageKey ? 'selected' : '';
+                return `<button type="button" class="jobLabelOption ${selected}" data-value="${escapeHtml(key)}">${escapeHtml(value)}</button>`;
+            })
+            .join('');
+        
+        return `
+            <div class="jobLabelSelector" data-email-id="${emailId}">
+                <span class="jobApplicationBadge editable" data-stage="${escapeHtml(stageKey)}">${escapeHtml(label)}</span>
+                <div class="jobLabelDropdown" data-email-id="${emailId}">
+                    ${options}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Setup click handlers for job label dropdown.
+     * @param {HTMLElement} card - Email card element
+     * @param {Object} email - Email object
+     */
+    _setupJobLabelDropdown(card, email) {
+        const selector = card.querySelector('.jobLabelSelector');
+        if (!selector) return;
+
+        const badge = selector.querySelector('.jobApplicationBadge');
+        const dropdown = selector.querySelector('.jobLabelDropdown');
+
+        // Toggle dropdown on badge click
+        badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains('open');
+            this.closeAllDropdowns();
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                this.openDropdownId = email.id;
+            }
+        });
+
+        // Handle option selection
+        dropdown.querySelectorAll('.jobLabelOption').forEach(option => {
+            option.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const newStage = option.dataset.value;
+                await this._handleJobLabelChange(email, newStage);
+                this.closeAllDropdowns();
+            });
+        });
+    }
+
+    /**
+     * Handle job label change by user.
+     * @param {Object} email - Email object
+     * @param {string} newStage - New job stage key
+     */
+    async _handleJobLabelChange(email, newStage) {
+        // Update cache with user override
+        const cached = this.emailRepository.getCachedResult(email.id) || {};
+        cached.userOverrideJobType = newStage;
+        cached.jobType = newStage; // Also update jobType for stats calculation
+        this.emailRepository.setCache(email.id, cached);
+        
+        // Save to storage
+        await this.emailRepository.saveToStorage();
+        
+        // Re-render the email list to reflect changes
+        this.renderEmailList();
+        
+        // Refresh pipeline diagram if callback is set (updates the Sankey code)
+        if (typeof this.onPipelineNeedsRefresh === 'function') {
+            this.onPipelineNeedsRefresh();
+        }
     }
 
     /**
@@ -204,7 +317,7 @@ export class UIController {
         }
         
         // Remove existing badges from container
-        const existingBadges = badgesContainer.querySelectorAll('.categoryBadge, .jobApplicationBadge, .unsubscribeBadge');
+        const existingBadges = badgesContainer.querySelectorAll('.categoryBadge, .jobApplicationBadge, .unsubscribeBadge, .jobLabelSelector');
         existingBadges.forEach(badge => badge.remove());
         
         // Remove aiSummary if it exists (it's not in badges container)
@@ -216,9 +329,12 @@ export class UIController {
         // Add job stage badge (Applications Sent, Interview, Accepted, Rejected, etc.)
         const isJobResult = results.category === 'Job' || (results.jobType && VALID_JOB_TYPES.includes(results.jobType));
         if (isJobResult) {
+            const stageKey = results.userOverrideJobType || results.jobType || 'applications_sent';
+            const stageLabel = JOB_TYPE_LABELS[stageKey] || 'Applications Sent';
             const jobBadge = document.createElement('span');
             jobBadge.className = 'jobApplicationBadge';
-            jobBadge.textContent = results.jobType && JOB_TYPE_LABELS[results.jobType] ? JOB_TYPE_LABELS[results.jobType] : 'Applications Sent';
+            jobBadge.dataset.stage = stageKey;
+            jobBadge.textContent = stageLabel;
             badgesContainer.appendChild(jobBadge);
         }
 
@@ -226,24 +342,9 @@ export class UIController {
         if (results.hasUnsubscribe) {
             const unsubscribeBadge = document.createElement('span');
             unsubscribeBadge.className = 'unsubscribeBadge';
-            unsubscribeBadge.textContent = 'Unsubscribe Available';
+            unsubscribeBadge.textContent = 'Unsubscribe';
             badgesContainer.appendChild(unsubscribeBadge);
-
-            if (results.unsubscribeLink) {
-                const unsubscribeLink = document.createElement('a');
-                unsubscribeLink.href = results.unsubscribeLink;
-                unsubscribeLink.target = '_blank';
-                unsubscribeLink.className = 'unsubscribeLink';
-                unsubscribeLink.textContent = 'Click to Unsubscribe';
-                actionsDiv.appendChild(unsubscribeLink);
-            }
         }
-
-        // Add summary (collapsible)
-        const summaryDiv = document.createElement('div');
-        summaryDiv.className = 'aiSummary';
-        summaryDiv.innerHTML = `<strong>Summary:</strong> ${escapeHtml(results.summary)}`;
-        actionsDiv.appendChild(summaryDiv);
     }
 
     /**
@@ -264,30 +365,63 @@ export class UIController {
         
         if (cachedResults) {
             const isJobCached = cachedResults.category === 'Job' || (cachedResults.jobType && VALID_JOB_TYPES.includes(cachedResults.jobType));
-            const jobStageLabel = isJobCached && cachedResults.jobType && JOB_TYPE_LABELS[cachedResults.jobType] ? JOB_TYPE_LABELS[cachedResults.jobType] : (isJobCached ? 'Applications Sent' : null);
-            const badgeHtml = jobStageLabel
-                ? `<div class="jobApplicationBadge" style="margin-bottom: 10px;">${escapeHtml(jobStageLabel)}</div>`
-                : (cachedResults.category ? `<div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">${escapeHtml(cachedResults.category)}</div>` : '');
+            const jobStageKey = cachedResults.userOverrideJobType || cachedResults.jobType || 'applications_sent';
+            const jobStageLabel = isJobCached && JOB_TYPE_LABELS[jobStageKey] ? JOB_TYPE_LABELS[jobStageKey] : (isJobCached ? 'Applications Sent' : null);
+            
+            let badgeHtml = '';
+            if (jobStageLabel) {
+                badgeHtml = this._createJobBadgeHtml(email.id, jobStageLabel, jobStageKey, true);
+            } else if (cachedResults.category) {
+                badgeHtml = `<div class="categoryBadge ${cachedResults.category.toLowerCase()}" style="margin-bottom: 10px;">${escapeHtml(cachedResults.category)}</div>`;
+            }
+            
             this.domRefs.modalAiResults.innerHTML = `
                 <h4>AI Analysis</h4>
                 <div class="aiResults">
-                    ${badgeHtml}
+                    <div class="emailBadges" style="margin-bottom: 12px;">
+                        ${badgeHtml}
+                        ${cachedResults.hasUnsubscribe ? '<span class="unsubscribeBadge">Unsubscribe</span>' : ''}
+                    </div>
                     <div class="aiSummary">
                         <strong>Summary:</strong><br>
                         ${escapeHtml(cachedResults.summary)}
                     </div>
-                    ${cachedResults.hasUnsubscribe ? `
-                        <div style="margin-top: 10px;">
-                            <span class="unsubscribeBadge">Unsubscribe Available</span>
-                            ${cachedResults.unsubscribeLink ? `
-                                <a href="${cachedResults.unsubscribeLink}" target="_blank" class="unsubscribeLink" style="display: block; margin-top: 8px;">
-                                    Click to Unsubscribe
-                                </a>
-                            ` : ''}
-                        </div>
+                    ${cachedResults.hasUnsubscribe && cachedResults.unsubscribeLink ? `
+                        <a href="${cachedResults.unsubscribeLink}" target="_blank" class="unsubscribeLink" style="display: block; margin-top: 12px;">
+                            Click to Unsubscribe
+                        </a>
                     ` : ''}
                 </div>
             `;
+            
+            // Setup dropdown in modal if job email
+            if (isJobCached) {
+                const selector = this.domRefs.modalAiResults.querySelector('.jobLabelSelector');
+                if (selector) {
+                    const badge = selector.querySelector('.jobApplicationBadge');
+                    const dropdown = selector.querySelector('.jobLabelDropdown');
+                    
+                    badge.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isOpen = dropdown.classList.contains('open');
+                        this.closeAllDropdowns();
+                        if (!isOpen) {
+                            dropdown.classList.add('open');
+                        }
+                    });
+                    
+                    dropdown.querySelectorAll('.jobLabelOption').forEach(option => {
+                        option.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const newStage = option.dataset.value;
+                            await this._handleJobLabelChange(email, newStage);
+                            this.closeAllDropdowns();
+                            // Refresh modal with new label
+                            this.showEmailModal(email);
+                        });
+                    });
+                }
+            }
         } else {
             // Show process button in modal
             this.domRefs.modalAiResults.innerHTML = `
@@ -297,8 +431,12 @@ export class UIController {
             
             document.getElementById('processInModalBtn').addEventListener('click', async () => {
                 try {
-                    const results = await this.backendApiService.processEmailWithAI(email);
-                    this.emailRepository.setCache(email.id, results);
+                    // Use cache if already processed (e.g. from card or double-click) to avoid duplicate API calls
+                    let results = this.emailRepository.getCachedResult(email.id);
+                    if (!results) {
+                        results = await this.backendApiService.processEmailWithAI(email);
+                        this.emailRepository.setCache(email.id, results);
+                    }
                     // Update email's inbox category based on AI category and jobType
                     email.inboxCategory = this.emailClassificationService.mapAiCategoryToInboxCategory(results.category, results.jobType, results.hasUnsubscribe);
                     // If jobType set, apply Gmail job label
@@ -435,33 +573,86 @@ export class UIController {
     }
 
     /**
-     * Update inbox tabs UI: render custom-label tabs and highlight active tab
+     * Update inbox tabs UI: render custom-label tabs, add count badges, highlight active tab
      */
     updateInboxTabsUI() {
         if (!this.domRefs.inboxTabs) return;
 
         const addBtn = this.domRefs.addCustomLabelTabBtn;
+        const emails = this.emailRepository.getEmails();
+        
+        // Calculate counts for each category
+        const counts = {
+            primary: 0,
+            promotions: 0,
+            job: 0
+        };
+        
+        const jobLabelId = this.emailRepository.getJobLabelId();
+        emails.forEach(email => {
+            const cached = this.emailRepository.getCachedResult(email.id);
+            const isJob = email.inboxCategory === INBOX_CATEGORIES.JOB || 
+                (jobLabelId && email.labelIds?.includes(jobLabelId)) ||
+                (cached?.jobType && cached.jobType !== null);
+            
+            if (isJob) {
+                counts.job++;
+            } else if (email.inboxCategory === INBOX_CATEGORIES.PROMOTIONS || cached?.hasUnsubscribe) {
+                counts.promotions++;
+            } else {
+                counts.primary++;
+            }
+        });
+
+        // Remove existing custom tabs
         if (addBtn) {
             const customLabels = this.emailRepository.getCustomLabels();
             this.domRefs.inboxTabs.querySelectorAll('.inboxTab[data-inbox^="custom:"]').forEach((el) => el.remove());
+            
+            // Add custom label tabs with counts
             customLabels.forEach((label) => {
+                const count = emails.filter(e => e.labelIds?.includes(label.gmailLabelId)).length;
                 const tab = document.createElement('button');
                 tab.type = 'button';
                 tab.className = 'inboxTab';
                 tab.dataset.inbox = `custom:${label.id}`;
-                tab.textContent = label.name;
+                tab.innerHTML = `${this._escapeHtml(label.name)}<span class="tabCount">${count}</span>`;
                 this.domRefs.inboxTabs.insertBefore(tab, addBtn);
             });
         }
 
+        // Update all tabs
         const tabs = this.domRefs.inboxTabs.querySelectorAll('.inboxTab');
         tabs.forEach(tab => {
-            if (tab.dataset.inbox === this.emailRepository.getSelectedInbox()) {
+            const inbox = tab.dataset.inbox;
+            
+            // Update active state
+            if (inbox === this.emailRepository.getSelectedInbox()) {
                 tab.classList.add('active');
             } else {
                 tab.classList.remove('active');
             }
+            
+            // Update count badges for built-in tabs
+            if (inbox === 'primary' || inbox === 'promotions' || inbox === 'job') {
+                let countBadge = tab.querySelector('.tabCount');
+                if (!countBadge) {
+                    countBadge = document.createElement('span');
+                    countBadge.className = 'tabCount';
+                    tab.appendChild(countBadge);
+                }
+                countBadge.textContent = counts[inbox] || 0;
+            }
         });
+    }
+    
+    /**
+     * Simple HTML escape helper.
+     */
+    _escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     /**
@@ -593,6 +784,124 @@ export class UIController {
      */
     setPipelineContent(sankeyText) {
         if (this.domRefs.sankeyTextarea) this.domRefs.sankeyTextarea.value = sankeyText || '';
+    }
+
+    /**
+     * Show categorization progress bar.
+     * @param {number} current - Current count
+     * @param {number} total - Total count
+     */
+    showCategorizationProgress(current, total) {
+        if (!this.domRefs.categorizationProgress) return;
+        
+        this.domRefs.categorizationProgress.style.display = 'block';
+        
+        if (this.domRefs.categorizationProgressCount) {
+            this.domRefs.categorizationProgressCount.textContent = `${current}/${total}`;
+        }
+        
+        if (this.domRefs.categorizationProgressFill) {
+            const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+            this.domRefs.categorizationProgressFill.style.width = `${percent}%`;
+        }
+    }
+
+    /**
+     * Hide categorization progress bar.
+     */
+    hideCategorizationProgress() {
+        if (!this.domRefs.categorizationProgress) return;
+        this.domRefs.categorizationProgress.style.display = 'none';
+    }
+
+    /**
+     * Set processing shimmer on an email card.
+     * @param {string} emailId - Email ID
+     * @param {boolean} isProcessing - Whether it's processing
+     */
+    setEmailProcessing(emailId, isProcessing) {
+        const card = this.domRefs.emailList?.querySelector(`.emailCard[data-email-id="${emailId}"]`);
+        if (!card) return;
+        
+        if (isProcessing) {
+            card.classList.add('processing');
+        } else {
+            card.classList.remove('processing');
+            // Add categorized flash effect
+            card.classList.add('categorized');
+            setTimeout(() => card.classList.remove('categorized'), 600);
+        }
+    }
+
+    /**
+     * Render the stats dashboard with animated values.
+     * @param {Object} stats - Stats object from calculateStats()
+     */
+    renderStatsDashboard(stats) {
+        if (!this.domRefs.statsDashboard) return;
+
+        // Animate total emails
+        if (this.domRefs.statTotalEmails) {
+            this.animateStatValue(this.domRefs.statTotalEmails, stats.totalEmails);
+        }
+
+        // Animate job applications
+        if (this.domRefs.statJobApps) {
+            this.animateStatValue(this.domRefs.statJobApps, stats.jobApps);
+        }
+
+        // Animate response rate
+        if (this.domRefs.statResponseRate) {
+            this.animateStatValue(this.domRefs.statResponseRate, stats.responseRate, '%');
+        }
+
+        // Render mini chart
+        if (this.domRefs.statJobMiniChart) {
+            this.renderMiniChart(stats.stages);
+        }
+    }
+
+    /**
+     * Animate a stat value with a pop effect.
+     * @param {HTMLElement} element - The stat value element
+     * @param {number} value - The value to display
+     * @param {string} suffix - Optional suffix (e.g., '%')
+     */
+    animateStatValue(element, value, suffix = '') {
+        const currentValue = parseInt(element.textContent) || 0;
+        if (currentValue === value) return;
+
+        element.setAttribute('data-animate', 'true');
+        element.textContent = value + suffix;
+
+        setTimeout(() => {
+            element.removeAttribute('data-animate');
+        }, 400);
+    }
+
+    /**
+     * Render mini bar chart for job stages.
+     * @param {Object} stages - Stages object with applied, interview, offer, rejected
+     */
+    renderMiniChart(stages) {
+        const chart = this.domRefs.statJobMiniChart;
+        if (!chart) return;
+
+        const total = stages.applied + stages.interview + stages.offer + stages.rejected;
+        if (total === 0) {
+            chart.innerHTML = '';
+            return;
+        }
+
+        const maxVal = Math.max(stages.applied, stages.interview, stages.offer, stages.rejected, 1);
+        const scale = (val) => val > 0 ? Math.max(3, (val / maxVal) * 20) : 0;
+
+        chart.innerHTML = `
+            <div class="statMiniBar applied" style="height: ${scale(stages.applied)}px;" title="Applied: ${stages.applied}"></div>
+            <div class="statMiniBar interview" style="height: ${scale(stages.interview)}px;" title="Interview: ${stages.interview}"></div>
+            <div class="statMiniBar offer" style="height: ${scale(stages.offer)}px;" title="Offers: ${stages.offer}"></div>
+            <div class="statMiniBar rejected" style="height: ${scale(stages.rejected)}px;" title="Rejected: ${stages.rejected}"></div>
+        `;
     }
 
     // UI feedback methods

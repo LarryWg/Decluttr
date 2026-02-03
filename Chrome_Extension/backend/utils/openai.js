@@ -35,9 +35,15 @@ Output exactly two things that matter:
 1. Is this email a direct response or notification about a JOB APPLICATION the user submitted? If yes, category = "Job" and set the correct stage below. Otherwise category = "Other" and set transitionFrom/transitionTo to null.
 2. Does this email contain or reference an unsubscribe option (link, "unsubscribe", "manage preferences", "opt out", etc.)? Set hasUnsubscribe true or false.
 
-Use category "Job" ONLY when the email is clearly from a company about an application the user sent (e.g. "We received your application", "Your application status", "Interview invite", rejection, offer letter). If there is any doubt, use "Other".
+IMPORTANT: Use category "Job" when the email is clearly from a company/employer about an application the user submitted. This includes ALL of the following – they are ALL "Job" emails:
+- Application confirmations/acknowledgments: "Thanks for applying", "Thank you for applying", "We received your application", "Thank you for your interest", "excited to receive your application", "Thank you for taking the time to apply", "applying to the [role] role"
+- Even if the email says "should you be selected to interview, we will reach out" or "if shortlisted" – this is STILL a Job email (Applications Sent stage) because it confirms they received your application
+- Status updates: "Your application status", "application update"
+- Interview invites, OA/assessment invites
+- Rejections: "we will not be moving forward", "not selected", "decided not to proceed"
+- Offers: job offer, verbal offer
 
-NEVER use "Job" for: one-time passcodes, login verification, OTP, school/university applications, job boards/job alerts/LinkedIn listings, recruiter cold outreach, emails the user sent, general newsletters. Use "Other" and set transitionFrom/transitionTo to null.
+NEVER use "Job" for: one-time passcodes, login verification, OTP, school/university applications, job boards/job alerts/LinkedIn job recommendations, recruiter cold outreach without reference to a specific application you submitted, emails the user sent, general newsletters. Use "Other" and set transitionFrom/transitionTo to null.
 
 When category is "Job", use ONLY these stages (exact spelling):
 - Applications Sent
@@ -49,15 +55,17 @@ When category is "Job", use ONLY these stages (exact spelling):
 - No Response
 - Declined
 
-Stage rules (only when category is "Job" – i.e. direct response about an application the user submitted):
-- Applications Sent: Application received/confirmed by company. Use this for: "We received your application", "Thanks for applying", "Thank you for applying to [role]", "we're thrilled you're interested". Also use Applications Sent (NOT Interview) when the email only mentions interview as a *future possibility*: e.g. "Should you be selected to interview, we will reach out", "we may reach out in the coming weeks", "if we'd like to move forward we'll contact you", "a member of our Talent team will reach out" (with no actual invite or date). If they are not actually inviting or scheduling an interview in this email → Applications Sent.
-- OA / Screening: Online assessment (coding test, HackerRank, Codility), recruiter phone screen, initial screening call, "first round", "technical assessment" (before a formal interview round), "schedule a call to learn more about your background". Use this for early filtering steps before a formal interview.
-- Interview: Use ONLY when the company is actually inviting or scheduling an interview in this email. Examples: "We would like to invite you to an interview", "schedule your interview", "pick a time for your interview", "interview day", "final round interview", "onsite interview", "virtual interview" (when they are setting it up, not just mentioning it might happen). Do NOT use Interview for: (1) Application confirmations that only say they might contact you later ("should you be selected to interview", "we'll reach out if we'd like to interview you", "a member of our team will reach out in the coming weeks" with no invite/link) → use Applications Sent; (2) recruiter screening calls, phone screens, "quick call", OA; (3) media/podcast interview. If no concrete invite or scheduling link/time is in the email → Applications Sent.
-- Job offer letter or verbal offer → Offer
-- Offer acceptance → Accepted
-- Rejection (explicit or polite): "we will not be moving forward", "not moving forward with your candidacy", "prioritizing other profiles", "we have decided not to move forward", "thank you for your interest... however we will not be moving forward", "we will not be moving forward with your candidacy for the moment" → Rejected
-- No response after long delay → No Response
-- User declined offer → Declined
+CRITICAL – Interview vs Applications Sent (avoid false positives for Interview):
+- Use "Interview" ONLY when BOTH are true: (a) the email is about a job application, AND (b) the email contains an ACTUAL invitation or scheduling of an interview in this message (e.g. "we would like to invite you to an interview", "schedule your interview", "pick a time", "choose a time slot", "book your interview", calendar link, "select a date", "interview on [date]", "final round interview" with a concrete invite).
+- Do NOT use "Interview" when the email only describes what MIGHT happen later. These are all Applications Sent: "should you be selected to interview we will reach out"; "we may reach out in the coming weeks"; "if we'd like to move forward we'll contact you"; "if shortlisted, you will move forward with our formal interview process"; "if your skills are a strong match, you will be contacted for an initial discussion"; "you will be contacted directly"; "what happens next? … you will be contacted / move forward with our interview process"; "our team will review"; "we'll be in touch". No actual invite or scheduling in this email → Applications Sent.
+- Do NOT use "Interview" for: recruiter screening calls, phone screens, "quick call to learn more", "schedule a call to discuss your background", OA/coding assessments → use OA / Screening or Applications Sent.
+- When in doubt between Interview and Applications Sent, always use Applications Sent.
+
+Stage rules (only when category is "Job"):
+- Applications Sent: Application received/confirmed. Use this for: "Thanks for applying", "Thank you for applying", "Thank you for your interest", "excited to receive your application", "We received your application", "Thank you for taking the time to apply". ALSO use Applications Sent even if the email mentions conditional future steps like "should you be selected to interview, we will reach out" or "if shortlisted you will be contacted" – these are application confirmations, NOT interview invites.
+- OA / Screening: Online assessment (HackerRank, Codility), recruiter phone screen, "schedule a call to learn more", "first round" technical assessment, screening call.
+- Interview: Only when this email actually invites or schedules an interview (invite text + scheduling link/time). Not for "we may reach out" or screening calls.
+- Offer → job offer or verbal offer. Accepted → offer acceptance. Rejected → "we will not be moving forward", "not moving forward with your candidacy". No Response / Declined as appropriate.
 
 Provide: summary (2-3 sentences), category ("Job" or "Other"), hasUnsubscribe (true/false), transitionFrom and transitionTo (exact stage names or null).
 
@@ -84,7 +92,7 @@ Respond ONLY with valid JSON:
           { role: 'system', content: 'You are an email analysis assistant. Always respond with valid JSON only, no additional text.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3,
+        temperature: 0.1,
         max_tokens: 600
       });
 
@@ -94,8 +102,18 @@ Respond ONLY with valid JSON:
 
       if (!responseText) {
         if (finishReason === 'content_filter') {
-          lastError = new Error('OpenAI did not return content (content filter). This email may contain text that was filtered. Try again later or skip.');
-        } else if (finishReason === 'length') {
+          // Don't retry - same input will filter again. Return safe fallback so pipeline continues.
+          console.warn('OpenAI content filter triggered for an email; returning fallback (category: Other).');
+          return {
+            summary: 'Email could not be summarized (content was filtered by provider).',
+            category: 'Other',
+            hasUnsubscribe: false,
+            jobType: null,
+            transitionFrom: null,
+            transitionTo: null
+          };
+        }
+        if (finishReason === 'length') {
           lastError = new Error('OpenAI response was cut off. Try again.');
         } else {
           lastError = new Error(`Empty response from OpenAI${finishReason ? ` (finish_reason: ${finishReason})` : ''}. Try again in a moment.`);
@@ -160,6 +178,22 @@ Respond ONLY with valid JSON:
         }
       }
     }
+    // Safeguard: only allow "Interview" if email contains actual invite/scheduling language (avoids labeling application confirmations as Interview)
+    if (transitionTo === 'Interview') {
+      const invitePhrases = /\b(invite you|invited to (an? )?interview|schedule your interview|schedule an interview|pick a time|choose a time|select a (time|date)|book (your )?interview|interview slot|calendar (link|invite)|we would like to invite|invite you (to|for) (an? )?interview)\b/i;
+      const hasInvite = invitePhrases.test(truncatedContent);
+      if (!hasInvite) {
+        transitionTo = 'Applications Sent';
+        transitionFrom = null;
+      } else {
+        // Application-confirmation wording: "if shortlisted...", "what happens next?" = no actual invite in this email
+        const applicationConfirmationOnly = /\b(if shortlisted|you will move forward with our (formal )?interview process|what happens next\?)\b/i;
+        if (applicationConfirmationOnly.test(truncatedContent)) {
+          transitionTo = 'Applications Sent';
+          transitionFrom = null;
+        }
+      }
+    }
     const jobType = transitionTo ? stageToSlug[transitionTo] : null;
 
     return {
@@ -204,9 +238,16 @@ async function categorizeEmail(emailContent, apiKey) {
 
   const prompt = `Categorize the following email into one of these categories: "Personal", "Promotional", "Spam", "Newsletter", "Job", or "Other".
 
-The "Job" category is ONLY for tracking job applications during a job search. Use "Job" ONLY when the email is clearly a direct response or notification from a company about a specific job application the user submitted (e.g. application received, interview invite, rejection including polite "we will not be moving forward with your candidacy", offer). When in doubt, use "Other" – never "Job".
+The "Job" category is for tracking job applications during a job search. Use "Job" when the email is clearly a direct response or notification from a company/employer about a specific job application the user submitted. This includes ALL of the following:
+- Application confirmations/acknowledgments: "Thanks for applying", "Thank you for applying", "We received your application", "Thank you for your interest", "excited to receive your application", "Thank you for taking the time to apply"
+- Even if the email says "should you be selected to interview" or "if shortlisted" – this is STILL a Job email because it confirms they received your application
+- Application status updates
+- Interview invitations
+- Assessment/OA invitations
+- Rejections: "we will not be moving forward", "not selected"
+- Job offers
 
-Do NOT use "Job" for: one-time passcodes, login verification, "confirm your identity", OTP or verification codes for a website; school/college/university applications; job boards, job alerts, or job listing newsletters (LinkedIn jobs, Indeed, Glassdoor); recruiter cold outreach or "we have opportunities"; media/podcast/non-job interviews; emails the user sent (their applications, follow-ups); career events or general newsletters. Use "Other" or "Newsletter" for those.
+Do NOT use "Job" for: one-time passcodes, login verification, "confirm your identity", OTP or verification codes; school/college/university applications; job boards, job alerts, or job listing newsletters (LinkedIn jobs, Indeed, Glassdoor); recruiter cold outreach without reference to a specific application you submitted; media/podcast/non-job interviews; emails the user sent; career events or general newsletters. Use "Other" or "Newsletter" for those.
 
 Email content:
 ${truncatedContent}
