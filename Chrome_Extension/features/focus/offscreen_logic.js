@@ -11,9 +11,16 @@ let faceLandmarker;
 let lastVideoTime = -1;    
 let lookAwayStartTime = null; 
 const LOOK_AWAY_THRESHOLD = 2000; // 2 seconds
+let faceNotFoundCount = 0;
+let lastLoopTime = 0;
 
 function setStatus(state) {
     const isDistracted = (state === 'distracted');
+    if (isDistracted) {
+        console.log(`%c[${new Date().toLocaleTimeString()}] DISTRACTION DETECTED: User has looked away.`, "color: #ef4444; font-weight: bold;");
+    } else if (state === 'focused') {
+        console.log(`%c[${new Date().toLocaleTimeString()}] FOCUS REGAINED: User is looking at screen.`, "color: #22c55e;");
+    }
     chrome.runtime.sendMessage({ type: 'ALARM_STATE', active: isDistracted });
 }
 
@@ -49,47 +56,51 @@ function checkFocus(landmarks) {
     }
 }
 
-async function renderLoop() {
-    if (video.currentTime !== lastVideoTime) {
-        lastVideoTime = video.currentTime;
-        if (faceLandmarker) {
-            const result = faceLandmarker.detectForVideo(video, performance.now());
-            if (result.faceLandmarks && result.faceLandmarks.length > 0) {
-                console.log(`[${new Date().toLocaleTimeString()}] AI Status: Face Detected`);
-                checkFocus(result.faceLandmarks[0]);
+function renderLoop() {
+    // Ensure landmarker is ready and video has data
+    if (faceLandmarker && video.readyState >= 2) {
+        try {
+            // Using performance.now() forces MediaPipe to treat this as a fresh frame
+            const results = faceLandmarker.detectForVideo(video, performance.now());
+
+            if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+                faceNotFoundCount = 0;
+                checkFocus(results.faceLandmarks[0]); 
+                // Heartbeat log every ~5 seconds
+                if (Math.random() > 0.99) console.log("AI Status: Tracking Face...");
             } else {
-                console.warn(`[${new Date().toLocaleTimeString()}] AI Status: No Face Seen`);
-                // If no face detected, treat as looking away
-                if (!lookAwayStartTime) lookAwayStartTime = Date.now();
-                if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
-                    setStatus('distracted');
+                faceNotFoundCount++;
+                if (faceNotFoundCount % 50 === 0) console.warn("AI Status: No face in frame");
+
+                if (faceNotFoundCount > 20) { // Faster trigger for "lost" face
+                    if (!lookAwayStartTime) lookAwayStartTime = Date.now();
+                    if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
+                        setStatus('distracted');
+                    }
                 }
             }
+        } catch (err) {
+            console.error("AI Processing Error:", err);
         }
     }
     requestAnimationFrame(renderLoop);
 }
 
 async function init() {
-    try {
-        const vision = await window.FilesetResolver.forVisionTasks("lib");
-        faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "lib/face_landmarker.task",
-                delegate: "GPU"
-            },
-            runningMode: "VIDEO"
+    const vision = await window.FilesetResolver.forVisionTasks("lib");
+    faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: "lib/face_landmarker.task", delegate: "CPU" },
+        runningMode: "VIDEO"
+    });
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+        video.play().then(() => {
+            console.log("Stream playing at 640x480 - Starting Loop");
+            // Use setInterval (33ms = ~30fps) to prevent background throttling
+            setInterval(renderLoop, 33);
         });
-
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
-            video.play();
-            renderLoop();
-        };
-    } catch (err) {
-        console.error("Background camera failed:", err);
-    }
+    };
 }
-
 init();

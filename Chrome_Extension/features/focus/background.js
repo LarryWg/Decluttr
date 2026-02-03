@@ -51,9 +51,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'ALARM_STATE') {
-        isDistracted = message.active;
-        sendResponse({ ok: true });
-    }
+    isDistracted = message.active;
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.id) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+                type: 'DISTRACTION_VISUAL', 
+                active: isDistracted 
+            }).catch(() => {
+                // Silently catch the "Receiving end does not exist" error
+                // This happens on system pages like chrome://extensions
+            });
+        }
+    });
+
+    // 2. Relay back to Popup if it's open (Onscreen Square)
+    chrome.runtime.sendMessage({ 
+        type: 'UI_UPDATE_STATE', 
+        active: isDistracted 
+    }).catch(() => {});
+    sendResponse({ ok: true });
+}
 
     if (message.type === 'GET_STATS') {
         sendResponse(sessionStats);
@@ -71,7 +88,9 @@ chrome.runtime.onConnect.addListener((port) => {
             // Check if the camera was supposed to be active when the popup closed
             if (cameraShouldBeActive) {
                 console.log("Popup closed: Initializing background camera...");
-                await setupOffscreen();
+                setTimeout(async () => {
+                    await setupOffscreen();
+                }, 500);
             }
         });
     }

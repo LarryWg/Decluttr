@@ -2,8 +2,10 @@
 <html>
 <head><title>AI Monitor</title></head>
 <body>
-    <video id="camera-feed" autoplay playsinline style="width:1px; height:1px; opacity:0.01;"></video>
-    <canvas id="overlay" style="width:1px; height:1px; opacity:0.01; position:fixed;"></canvas>
+    <video id="camera-feed" autoplay playsinline 
+       style="width: 200px; height: 150px; position: fixed; top: 0; left: 0; opacity: 0.1;"></video>
+    <canvas id="overlay" width="640" height="480" 
+            style="display: none;"></canvas>
     <script src="video.js" type="module"></script>
     <script src="offscreen_logic.js" type="module"></script>
 </body>

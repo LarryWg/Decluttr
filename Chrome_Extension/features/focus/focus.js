@@ -35,11 +35,19 @@ const LOOK_AWAY_THRESHOLD = 2000;
 
 function setStatus(state) {
     if (!statusDot || !statusText) return;
+    const container = document.querySelector('.focus-container');
+    
     statusDot.className = 'status-dot status-' + state;
     statusText.textContent = state === 'focused' ? 'Focused' : 
                              state === 'distracted' ? 'Look at screen!' : 'Tracking';
                              
-    // Tell background which timer bucket to increment
+    // Add or remove the red square alert defined in your CSS
+    if (state === 'distracted') {
+        container.classList.add('alert-active');
+    } else {
+        container.classList.remove('alert-active');
+    }
+
     chrome.runtime.sendMessage({ type: 'ALARM_STATE', active: (state === 'distracted') });
 }
 
@@ -48,6 +56,18 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'STATS_UPDATE' && message.stats) {
         if (focusEl) focusEl.textContent = formatTime(message.stats.focusedSeconds);
         if (distractEl) distractEl.textContent = formatTime(message.stats.distractedSeconds);
+    }
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'UI_UPDATE_STATE') {
+        const container = document.querySelector('.focus-container');
+        if (message.active) {
+            container.style.boxShadow = "inset 0 0 0 12px #ef4444"; // The Red Square
+            statusText.textContent = "Look at screen!";
+        } else {
+            container.style.boxShadow = "none";
+        }
     }
 });
 
