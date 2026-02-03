@@ -57,10 +57,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             chrome.tabs.sendMessage(tabs[0].id, { 
                 type: 'DISTRACTION_VISUAL', 
                 active: isDistracted 
-            }).catch(() => {
-                // Silently catch the "Receiving end does not exist" error
-                // This happens on system pages like chrome://extensions
-            });
+            }).catch(err => console.log("Tab not ready for alert yet."));
         }
     });
 
