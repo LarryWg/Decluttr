@@ -2,6 +2,16 @@
 
 Chrome extension for email management, AI summaries, and productivity tools.
 
+## Tech stack
+
+| Layer | Technologies |
+|-------|--------------|
+| **Extension** | Chrome Manifest V3, vanilla JavaScript (ES modules), HTML, CSS |
+| **Backend** | Node.js, Express, OpenAI API, Axios, CORS, dotenv |
+| **Email** | Gmail API, OAuth 2.0, D3.js (Sankey diagrams) |
+| **Focus mode** | Offscreen Documents API, MediaPipe / TensorFlow (face landmarker, WASM) |
+| **UI** | CSS custom properties (theme), popup + multi-page feature UIs |
+
 ## Features
 
 - **Email Assistant**: Gmail integration with AI-powered summaries, categorization (Primary / Promotions), unsubscribe detection, and Manage Promotions (unsubscribe in Gmail or move to trash)
