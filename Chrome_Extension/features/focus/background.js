@@ -5,6 +5,23 @@ let statsInterval = null;
 let cameraShouldBeActive = false;
 let sessionStats = { focusedSeconds: 0, distractedSeconds: 0 };
 
+const STORAGE_KEY_CAMERA = 'focus_cameraActive';
+const STORAGE_KEY_STATS = 'focus_sessionStats';
+
+async function persistSessionState() {
+    await chrome.storage.session.set({
+        [STORAGE_KEY_CAMERA]: cameraShouldBeActive,
+        [STORAGE_KEY_STATS]: sessionStats
+    });
+}
+
+async function loadSessionState() {
+    const raw = await chrome.storage.session.get([STORAGE_KEY_CAMERA, STORAGE_KEY_STATS]);
+    if (raw[STORAGE_KEY_CAMERA] === true) cameraShouldBeActive = true;
+    if (raw[STORAGE_KEY_STATS] && typeof raw[STORAGE_KEY_STATS].focusedSeconds === 'number')
+        sessionStats = raw[STORAGE_KEY_STATS];
+}
+
 async function closeOffscreen() {
   try {
     const hasDoc = await chrome.offscreen.hasDocument();
@@ -47,54 +64,63 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             closeOffscreen();
             isDistracted = false;
         }
-        sendResponse({ ok: true });
+        persistSessionState().then(() => sendResponse({ ok: true }));
+        return true;
     }
 
     if (message.type === 'ALARM_STATE') {
-    isDistracted = message.active;
-    chrome.tabs.query({ currentWindow: true }, async (tabs) => {
-        // Prefer the active tab if it's a web page; otherwise use any http(s) tab so overlay shows on user's screen
-        const activeTab = tabs.find(t => t.active);
-        const url = (activeTab && activeTab.url) || '';
-        const activeIsWeb = url.startsWith('http://') || url.startsWith('https://');
-        const targetTab = activeIsWeb ? activeTab : tabs.find(t => {
-            const u = t.url || '';
-            return (u.startsWith('http://') || u.startsWith('https://'));
-        });
-        if (!targetTab?.id) return;
-
-        const payload = { type: 'DISTRACTION_VISUAL', active: isDistracted };
-        try {
-            await chrome.tabs.sendMessage(targetTab.id, payload);
-        } catch (err) {
-            try {
-                await chrome.scripting.executeScript({
-                    target: { tabId: targetTab.id },
-                    files: ['features/focus/red_alert.js']
-                });
-                await new Promise(r => setTimeout(r, 50));
-                await chrome.tabs.sendMessage(targetTab.id, payload);
-            } catch (e) {
-                console.log('Distraction overlay could not be shown in tab:', e?.message);
+        isDistracted = message.active;
+        // 1. Show overlay on all web tabs in current window (so it shows no matter which tab is active)
+        chrome.tabs.query({ currentWindow: true }, async (tabs) => {
+            const webTabs = tabs.filter(t => {
+                const u = t.url || '';
+                return u.startsWith('http://') || u.startsWith('https://');
+            });
+            const payload = { type: 'DISTRACTION_VISUAL', active: isDistracted };
+            for (const tab of webTabs) {
+                if (!tab?.id) continue;
+                try {
+                    await chrome.tabs.sendMessage(tab.id, payload);
+                } catch (err) {
+                    try {
+                        await chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            files: ['features/focus/red_alert.js']
+                        });
+                        await new Promise(r => setTimeout(r, 50));
+                        await chrome.tabs.sendMessage(tab.id, payload);
+                    } catch (e) {
+                        console.log('Distraction overlay could not be shown in tab:', tab.id, e?.message);
+                    }
+                }
             }
-        }
-    });
+        });
+        // 2. Relay to popup (onscreen red square)
+        chrome.runtime.sendMessage({
+            type: 'UI_UPDATE_STATE',
+            active: isDistracted
+        }).catch(() => {});
+        sendResponse({ ok: true });
+        return;
+    }
 
-    // 2. Relay back to Popup if it's open (Onscreen Square)
-    chrome.runtime.sendMessage({ 
-        type: 'UI_UPDATE_STATE', 
-        active: isDistracted 
-    }).catch(() => {});
-    sendResponse({ ok: true });
-}
+    if (message.type === 'GET_CAMERA_STATE') {
+        loadSessionState().then(() => {
+            sendResponse({ active: cameraShouldBeActive });
+        });
+        return true;
+    }
 
     if (message.type === 'GET_STATS') {
-        sendResponse(sessionStats);
+        loadSessionState().then(() => sendResponse(sessionStats));
+        return true;
     }
 
     if (message.type === 'RESET_STATS') {
         sessionStats = { focusedSeconds: 0, distractedSeconds: 0 };
         chrome.runtime.sendMessage({ type: 'STATS_UPDATE', stats: sessionStats }).catch(() => {});
+        persistSessionState().then(() => sendResponse({ ok: true }));
+        return true;
     }
 });
 

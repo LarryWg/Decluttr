@@ -1,7 +1,7 @@
 /**
  * UI Controller - Handles all UI rendering and updates
  */
-import { INBOX_CATEGORIES, DEFAULT_INBOX, JOB_TYPE_LABELS, VALID_JOB_TYPES } from '../config/constants.js';
+import { INBOX_CATEGORIES, DEFAULT_INBOX, JOB_TYPE_LABELS, VALID_JOB_TYPES, CARD_STAGGER_MS, CARD_STAGGER_MAX_MS } from '../config/constants.js';
 import { escapeHtml, convertUrlsToLinks } from '../utils/textUtils.js';
 import { formatDate } from '../utils/dateUtils.js';
 
@@ -74,8 +74,8 @@ export class UIController {
         // Display filtered emails with staggered entrance animation
         filteredEmails.forEach((email, index) => {
             const emailCard = this.createEmailCard(email);
-            // Stagger animation delay (max 500ms to keep it snappy)
-            const delay = Math.min(index * 40, 500);
+            // Stagger animation delay (shorter in demo mode for faster visual feedback)
+            const delay = Math.min(index * CARD_STAGGER_MS, CARD_STAGGER_MAX_MS);
             emailCard.style.animationDelay = `${delay}ms`;
             this.domRefs.emailList.appendChild(emailCard);
         });

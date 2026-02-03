@@ -1,6 +1,16 @@
-/* Focus Mode - Clean, modern UI */
+/* Pomodoro - Tomato-red accent, timer-style UI */
 * {
     box-sizing: border-box;
+}
+
+:root {
+    --pomodoro-red: #e74c3c;
+    --pomodoro-red-dim: rgba(231, 76, 60, 0.2);
+    --pomodoro-red-border: rgba(231, 76, 60, 0.45);
+    --pomodoro-focus-green: #27ae60;
+    --pomodoro-focus-green-dim: rgba(39, 174, 96, 0.2);
+    --pomodoro-break-amber: #f39c12;
+    --pomodoro-break-amber-dim: rgba(243, 156, 18, 0.2);
 }
 
 html {
@@ -23,6 +33,9 @@ body {
     width: 100%;
     margin: 0 auto;
 }
+.pomodoro-container .focus-header {
+    border-bottom-color: var(--pomodoro-red-border);
+}
 
 .focus-header {
     display: flex;
@@ -31,6 +44,12 @@ body {
     margin-bottom: 20px;
     padding-bottom: 14px;
     border-bottom: 1px solid var(--decluttr-surface-border);
+}
+
+.pomodoro-title {
+    color: var(--pomodoro-red);
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 .focus-back-btn {
@@ -70,9 +89,9 @@ body {
     background: #475569;
 }
 .status-dot.status-ready { background: #64748b; }
-.status-dot.status-tracking { background: #22c55e; animation: status-pulse 2s ease-in-out infinite; }
-.status-dot.status-focused { background: #22c55e; }
-.status-dot.status-distracted { background: #ef4444; animation: status-pulse 0.8s ease-in-out infinite; }
+.status-dot.status-tracking { background: var(--pomodoro-focus-green); animation: status-pulse 2s ease-in-out infinite; }
+.status-dot.status-focused { background: var(--pomodoro-focus-green); }
+.status-dot.status-distracted { background: var(--pomodoro-red); animation: status-pulse 0.8s ease-in-out infinite; }
 @keyframes status-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
@@ -107,6 +126,23 @@ body {
     cursor: pointer;
     transition: all 0.2s;
 }
+.pomodoro-start-btn {
+    background: var(--pomodoro-red-dim);
+    border-color: var(--pomodoro-red-border);
+    color: #ff6b5b;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 700;
+}
+.pomodoro-start-btn:hover {
+    background: rgba(231, 76, 60, 0.3);
+    border-color: var(--pomodoro-red);
+}
+.pomodoro-start-btn.active {
+    background: rgba(231, 76, 60, 0.25);
+    border-color: var(--pomodoro-red);
+    color: #ff6b5b;
+}
 .focus-toggle-btn:hover {
     background: rgba(34, 197, 94, 0.25);
     border-color: rgba(34, 197, 94, 0.5);
@@ -129,6 +165,10 @@ body {
     border-radius: 14px;
     overflow: hidden;
     min-height: 200px;
+}
+.pomodoro-camera-well {
+    border-radius: 16px;
+    border: 1px solid var(--decluttr-surface-border);
 }
 
 #camera-feed {
@@ -182,24 +222,40 @@ body {
     opacity: 0.5;
 }
 
-/* In-focus-page distraction alert */
+/* Pomodoro: in-focus nudge alert */
 .alert-active {
-    border: 3px solid #ef4444 !important;
-    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.3);
-    animation: decluttr-pulse 1.5s ease-in-out infinite;
+    border: 3px solid var(--pomodoro-red) !important;
+    box-shadow: 0 0 0 6px var(--pomodoro-red-dim);
+    animation: pomodoro-pulse 1.5s ease-in-out infinite;
     box-sizing: border-box;
 }
 
-@keyframes decluttr-pulse {
-    0%, 100% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.3); }
-    50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0.5); }
+@keyframes pomodoro-pulse {
+    0%, 100% { box-shadow: 0 0 0 6px var(--pomodoro-red-dim); }
+    50% { box-shadow: 0 0 0 12px rgba(231, 76, 60, 0.4); }
 }
 
-.stats-grid {
+.stats-grid,
+.pomodoro-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     margin-bottom: 8px;
+}
+.pomodoro-stats .stat-glass-card {
+    border-radius: 16px;
+    padding: 14px;
+}
+.pomodoro-stat-focus { border-color: rgba(39, 174, 96, 0.35); }
+.pomodoro-stat-break { border-color: rgba(243, 156, 18, 0.35); }
+.pomodoro-timer {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+.pomodoro-reset {
+    grid-column: span 2;
+    border-radius: 10px;
 }
 
 .stat-glass-card {
@@ -238,15 +294,17 @@ body {
     display: block;
 }
 
-/* Color Coding */
-#focusTime {
-    color: #22c55e;
-    text-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+/* Pomodoro stat colors */
+#focusTime,
+.pomodoro-stat-focus .stat-value {
+    color: var(--pomodoro-focus-green);
+    text-shadow: 0 0 10px var(--pomodoro-focus-green-dim);
 }
 
-#distractTime {
-    color: #ef4444;
-    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+#distractTime,
+.pomodoro-stat-break .stat-value {
+    color: var(--pomodoro-break-amber);
+    text-shadow: 0 0 10px var(--pomodoro-break-amber-dim);
 }
 
 .stat-reset-btn {
@@ -273,4 +331,55 @@ body {
 .stat-reset-btn span {
     margin-right: 4px;
     font-size: 14px;
+}
+
+/* Session running in background (returned from leave) */
+.session-in-background-bar {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--decluttr-surface-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.session-in-background-bar.hidden {
+    display: none;
+}
+.session-in-background-msg {
+    margin: 0;
+    font-size: 13px;
+    color: var(--decluttr-text-muted);
+}
+.session-in-background-actions {
+    display: flex;
+    gap: 10px;
+}
+.session-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+.session-btn-resume {
+    background: var(--pomodoro-red-dim);
+    border-color: var(--pomodoro-red-border);
+    color: #ff6b5b;
+}
+.session-btn-resume:hover {
+    background: rgba(231, 76, 60, 0.3);
+    border-color: var(--pomodoro-red);
+}
+.session-btn-end {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--decluttr-surface-border);
+    color: var(--decluttr-text-muted);
+}
+.session-btn-end:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--decluttr-text);
 }

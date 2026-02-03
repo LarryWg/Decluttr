@@ -2,6 +2,17 @@
  * Configuration Constants
  */
 
+/** Set true for demos: higher concurrency, shorter delays so categorization finishes faster. */
+export const DEMO_FAST_CATEGORIZATION = true;
+
+/** How many emails to send to the AI in parallel during auto-categorize. */
+export const CATEGORIZATION_CONCURRENCY = DEMO_FAST_CATEGORIZATION ? 6 : 3;
+/** Pause (ms) between batches during auto-categorize. Reduce for demos. */
+export const CATEGORIZATION_DELAY_MS = DEMO_FAST_CATEGORIZATION ? 80 : 400;
+/** Stagger (ms) per email card entrance; max total stagger. Shorter for demos. */
+export const CARD_STAGGER_MS = DEMO_FAST_CATEGORIZATION ? 15 : 40;
+export const CARD_STAGGER_MAX_MS = DEMO_FAST_CATEGORIZATION ? 200 : 500;
+
 export const DEFAULT_BACKEND_URL = 'http://localhost:3000';
 export const MAX_EMAILS_TO_FETCH = 50;
 export const STORAGE_KEY_BACKEND_URL = 'backend_url';

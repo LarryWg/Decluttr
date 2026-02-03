@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Mode</title>
+    <title>Pomodoro</title>
     <link rel="stylesheet" href="../../utils/theme.css">
     <link rel="stylesheet" href="focus.css">
 </head>
 <body>
-    <div class="focus-container">
+    <div class="focus-container pomodoro-container">
         <header class="focus-header">
             <button class="focus-back-btn" id="backBtn">← Back</button>
-            <h1 class="focus-title">Focus Mode</h1>
+            <h1 class="focus-title pomodoro-title">Focus</h1>
             <div class="focus-status" id="statusIndicator">
                 <span class="status-dot" id="statusDot"></span>
                 <span class="status-text" id="statusText">Ready</span>
@@ -19,31 +19,38 @@
         </header>
 
         <main class="focus-main">
-            <p class="focus-description">Eye tracking keeps you accountable. Look away for 2+ seconds to get a nudge.</p>
-            <div class="stats-grid">
-                <div class="stat-glass-card">
-                    <span class="stat-label">Focused</span>
-                    <span class="stat-value" id="focusTime">00:00</span>
+            <p class="focus-description">Stay in the zone. Eye tracking keeps you accountable—look away 2+ seconds and we’ll nudge you back.</p>
+            <div class="pomodoro-stats">
+                <div class="stat-glass-card pomodoro-stat-focus">
+                    <span class="stat-label">Focus time</span>
+                    <span class="stat-value pomodoro-timer" id="focusTime">00:00</span>
                 </div>
-                <div class="stat-glass-card">
-                    <span class="stat-label">Distracted</span>
-                    <span class="stat-value" id="distractTime">00:00</span>
+                <div class="stat-glass-card pomodoro-stat-break">
+                    <span class="stat-label">Break</span>
+                    <span class="stat-value pomodoro-timer" id="distractTime">00:00</span>
                 </div>
-                <button id="resetStatsBtn" class="stat-reset-btn">
-                    <span>↺</span> Reset Session
+                <button id="resetStatsBtn" class="stat-reset-btn pomodoro-reset">
+                    <span>↺</span> New round
                 </button>
             </div>
-            <button id="toggleCamBtn" class="focus-toggle-btn">
+            <div id="sessionInBackgroundBar" class="session-in-background-bar hidden">
+                <p class="session-in-background-msg">Tracking in the background.</p>
+                <div class="session-in-background-actions">
+                    <button type="button" id="resumeCamBtn" class="session-btn session-btn-resume">Resume Pomodoro</button>
+                    <button type="button" id="endSessionBtn" class="session-btn session-btn-end">End Session</button>
+                </div>
+            </div>
+            <button id="toggleCamBtn" class="focus-toggle-btn pomodoro-start-btn">
                 <span class="btn-icon">▶</span>
-                <span class="btn-label">Start Session</span>
+                <span class="btn-label">Begin Session</span>
             </button>
 
-            <div class="video-container">
+            <div class="video-container pomodoro-camera-well">
                 <video id="camera-feed" class="video-hidden" autoplay playsinline></video>
                 <canvas id="overlay"></canvas>
                 <div class="video-placeholder" id="videoPlaceholder">
-                    <span class="placeholder-icon">👁</span>
-                    <span>Camera hidden</span>
+                    <span class="placeholder-icon"></span>
+                    <span>Camera off</span>
                 </div>
             </div>
         </main>

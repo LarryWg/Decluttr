@@ -14,7 +14,7 @@ import { SettingsService } from './services/SettingsService.js';
 import { UIController } from './controllers/UIController.js';
 import { EventController } from './controllers/EventController.js';
 import { buildSankeyMaticText } from './services/SankeyPipelineService.js';
-import { DEFAULT_INBOX, INBOX_CATEGORIES } from './config/constants.js';
+import { DEFAULT_INBOX, INBOX_CATEGORIES, CATEGORIZATION_CONCURRENCY, CATEGORIZATION_DELAY_MS } from './config/constants.js';
 
 /**
  * Main Email Controller
@@ -456,8 +456,8 @@ class EmailController {
      * @param {Array} emails - Array of emails to categorize
      */
     async autoCategorizeEmails(emails) {
-        const concurrency = 3;
-        const delayMs = 400;
+        const concurrency = CATEGORIZATION_CONCURRENCY;
+        const delayMs = CATEGORIZATION_DELAY_MS;
         const uncachedEmails = emails.filter(e => !this.emailRepository.getCachedResult(e.id));
         const totalToProcess = uncachedEmails.length;
         let processed = 0;

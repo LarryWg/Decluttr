@@ -25,21 +25,26 @@ const focusEl = document.getElementById('focusTime');
 const distractEl = document.getElementById('distractTime');
 const resetBtn = document.getElementById('resetStatsBtn');
 const backBtn = document.getElementById("backBtn");
+const sessionInBackgroundBar = document.getElementById('sessionInBackgroundBar');
+const resumeCamBtn = document.getElementById('resumeCamBtn');
+const endSessionBtn = document.getElementById('endSessionBtn');
 
 // --- Global State ---
 let faceLandmarker;        
 let lastVideoTime = -1;    
 let lookAwayStartTime = null; 
 let cameraStarted = false;
+let lastAlarmActive = null; // only send ALARM_STATE when this changes
 const LOOK_AWAY_THRESHOLD = 2000; 
 
 function setStatus(state) {
     if (!statusDot || !statusText) return;
     const container = document.querySelector('.focus-container');
     
-    statusDot.className = 'status-dot status-' + state;
-    statusText.textContent = state === 'focused' ? 'Focused' : 
-                             state === 'distracted' ? 'Look at screen!' : 'Tracking';
+    statusDot.className = 'status-dot status-' + state.toLowerCase();
+    statusText.textContent = state === 'focused' ? 'In focus' : 
+                             state === 'distracted' ? 'Back to work!' : 
+                             state === 'Ready' ? 'Ready' : 'Tracking';
                              
     // Add or remove the red square alert defined in your CSS
     if (state === 'distracted') {
@@ -48,7 +53,11 @@ function setStatus(state) {
         container.classList.remove('alert-active');
     }
 
-    chrome.runtime.sendMessage({ type: 'ALARM_STATE', active: (state === 'distracted') });
+    const active = (state === 'distracted');
+    if (lastAlarmActive !== active) {
+        lastAlarmActive = active;
+        chrome.runtime.sendMessage({ type: 'ALARM_STATE', active });
+    }
 }
 
 // Update UI from Background Ticks
@@ -63,8 +72,8 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'UI_UPDATE_STATE') {
         const container = document.querySelector('.focus-container');
         if (message.active) {
-            if (container) container.style.boxShadow = "inset 0 0 0 12px #ef4444";
-            if (statusText) statusText.textContent = "Look at screen!";
+            if (container) container.style.boxShadow = "inset 0 0 0 12px #e74c3c";
+            if (statusText) statusText.textContent = "Back to work!";
         } else {
             if (container) container.style.boxShadow = "none";
         }
@@ -79,6 +88,56 @@ if (resetBtn) {
     resetBtn.onclick = () => chrome.runtime.sendMessage({ type: 'RESET_STATS' });
 }
 
+// --- Resume camera (shared: used on load when session active, and by Resume button) ---
+async function resumeCameraInPopup() {
+    await chrome.runtime.sendMessage({ type: 'FOCUS_UI_OPEN' });
+    video.classList.replace('video-hidden', 'video-visible');
+    videoPlaceholder.classList.add('hidden');
+    toggleCamBtn.querySelector('.btn-label').textContent = 'End Pomodoro';
+    toggleCamBtn.classList.add('active');
+    if (!cameraStarted) {
+        cameraStarted = true;
+        const ok = await startCamera();
+        if (!ok) {
+            if (sessionInBackgroundBar) sessionInBackgroundBar.classList.remove('hidden');
+            return;
+        }
+    }
+    chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: true });
+    if (sessionInBackgroundBar) sessionInBackgroundBar.classList.add('hidden');
+}
+
+// --- Session sync on load: if session is still active, keep camera visible (auto-resume) ---
+async function syncSessionStateOnLoad() {
+    try {
+        const { active: sessionActive } = await chrome.runtime.sendMessage({ type: 'GET_CAMERA_STATE' }) || {};
+        if (!sessionActive || cameraStarted) return;
+        // Session was running in background; restore camera in extension so it stays visible until user hits Stop
+        await resumeCameraInPopup();
+    } catch (e) {
+        console.warn('Could not get camera state:', e);
+    }
+}
+syncSessionStateOnLoad();
+
+// --- Resume camera (from session-in-background bar, if we showed it after a failed auto-resume) ---
+if (resumeCamBtn) {
+    resumeCamBtn.addEventListener('click', () => resumeCameraInPopup());
+}
+
+// --- End session (from session-in-background bar, no camera needed) ---
+if (endSessionBtn) {
+    endSessionBtn.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: false });
+        if (sessionInBackgroundBar) sessionInBackgroundBar.classList.add('hidden');
+        if (toggleCamBtn) {
+            toggleCamBtn.querySelector('.btn-label').textContent = 'Start Pomodoro';
+            toggleCamBtn.classList.remove('active');
+        }
+        setStatus('Ready');
+    });
+}
+
 // --- Camera Toggle ---
 toggleCamBtn.addEventListener('click', async () => {
     const isCurrentlyHidden = video.classList.contains('video-hidden');
@@ -89,7 +148,7 @@ toggleCamBtn.addEventListener('click', async () => {
         
         video.classList.replace('video-hidden', 'video-visible');
         videoPlaceholder.classList.add('hidden');
-        toggleCamBtn.querySelector('.btn-label').textContent = 'Hide Camera';
+        toggleCamBtn.querySelector('.btn-label').textContent = 'End Pomodoro';
         toggleCamBtn.classList.add('active');
 
         if (!cameraStarted) {
@@ -101,7 +160,7 @@ toggleCamBtn.addEventListener('click', async () => {
     } else {
         video.classList.replace('video-visible', 'video-hidden');
         videoPlaceholder.classList.remove('hidden');
-        toggleCamBtn.querySelector('.btn-label').textContent = 'Start Session';
+        toggleCamBtn.querySelector('.btn-label').textContent = 'Start Pomodoro';
         toggleCamBtn.classList.remove('active');
         
         chrome.runtime.sendMessage({ type: 'SET_CAMERA_STATE', active: false });
@@ -119,6 +178,7 @@ async function startCamera() {
             renderLoop();
         };
         setStatus('focused');
+        return true;
     } catch (err) {
         const msg = err?.name === 'NotAllowedError' ? 'Camera permission denied'
             : err?.name === 'NotFoundError' ? 'No camera found'
@@ -130,12 +190,13 @@ async function startCamera() {
         video.classList.remove('video-visible');
         if (videoPlaceholder) videoPlaceholder.classList.remove('hidden');
         if (toggleCamBtn) {
-            toggleCamBtn.querySelector('.btn-label').textContent = 'Start Session';
+            toggleCamBtn.querySelector('.btn-label').textContent = 'Start Pomodoro';
             toggleCamBtn.querySelector('.btn-icon').textContent = '▶';
             toggleCamBtn.classList.remove('active');
             toggleCamBtn.disabled = false;
         }
         setStatus('Ready');
+        return false;
     }
 }
 
@@ -145,6 +206,7 @@ function stopCamera() {
         video.srcObject = null;
     }
     cameraStarted = false;
+    lastAlarmActive = null;
 }
 
 async function renderLoop() {
@@ -215,7 +277,7 @@ async function initMediaPipe() {
         });
 
         console.log("Eye Tracking Initialized");
-        // Camera starts when user clicks "Start Session" so video has proper dimensions
+        // Camera starts when user clicks "Start Pomodoro" so video has proper dimensions
     } catch (err) {
         console.error("Initialization error:", err);
     }
