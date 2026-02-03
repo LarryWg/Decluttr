@@ -5,9 +5,6 @@
 
 // --- Element References ---
 const video = document.getElementById('camera-feed');
-const canvas = document.getElementById('overlay');
-const backBtn = document.getElementById("backBtn");
-const toggleCamBtn = document.getElementById('toggleCamBtn');
 
 // --- Global Variables ---
 let faceLandmarker;        
@@ -15,51 +12,9 @@ let lastVideoTime = -1;
 let lookAwayStartTime = null; 
 const LOOK_AWAY_THRESHOLD = 2000; // 2 seconds
 
-// --- Event Listeners (only in popup UI - backBtn/toggleCamBtn don't exist in offscreen) ---
-if (backBtn) {
-    backBtn.addEventListener("click", () => {
-        window.location.href = "../../popup/App.html";
-    });
-}
-if (toggleCamBtn) {
-    toggleCamBtn.addEventListener('click', () => {
-        if (video.classList.contains('video-hidden')) {
-            video.classList.remove('video-hidden');
-            video.classList.add('video-visible');
-            toggleCamBtn.textContent = 'Hide Camera';
-            toggleCamBtn.classList.add('active-btn');
-        } else {
-            video.classList.remove('video-visible');
-            video.classList.add('video-hidden');
-            toggleCamBtn.textContent = 'Show Camera';
-            toggleCamBtn.classList.remove('active-btn');
-        }
-    });
-}
-
-// --- MediaPipe Initialization ---
-async function initMediaPipe() {
-    try {
-        if (!window.FilesetResolver || !window.FaceLandmarker) {
-            setTimeout(initMediaPipe, 100);
-            return;
-        }
-
-        const vision = await window.FilesetResolver.forVisionTasks("lib");
-
-        faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "lib/face_landmarker.task",
-                delegate: "GPU"
-            },
-            runningMode: "VIDEO"
-        });
-
-        console.log("Eye Tracking Initialized");
-        startCamera();
-    } catch (err) {
-        console.error("Initialization error:", err);
-    }
+function setStatus(state) {
+    const isDistracted = (state === 'distracted');
+    chrome.runtime.sendMessage({ type: 'ALARM_STATE', active: isDistracted });
 }
 
 /**
@@ -76,50 +31,22 @@ function checkFocus(landmarks) {
     const midPointY = (leftEye.y + rightEye.y) / 2;
     const verticalDiff = nose.y - midPointY;
 
-    const isLookingAway = horizontalDiff > 0.035 || verticalDiff < 0.01 || verticalDiff > 0.14;
+    // Adjusted thresholds based on your focus.js settings
+    const isLookingSide = horizontalDiff > 0.035;
+    const isLookingUp = verticalDiff < 0.01; 
+    const isLookingDown = verticalDiff > 0.10; // Increased sensitivity
+
+    const isLookingAway = isLookingSide || isLookingUp || isLookingDown;
 
     if (isLookingAway) {
         if (!lookAwayStartTime) lookAwayStartTime = Date.now();
         if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
-            // Signal background.js to pulse the active tab
-            chrome.runtime.sendMessage({type: 'ALARM_STATE', active: true});
+            setStatus('distracted');
         }
     } else {
         lookAwayStartTime = null;
-        chrome.runtime.sendMessage({type: 'ALARM_STATE', active: false});
+        setStatus('focused');
     }
-}
-
-/**
- * Renders detection results.
- * Dots turn red as long as lookAwayStartTime is active.
- */
-function drawResults(result) {
-    const ctx = canvas.getContext("2d");
-    
-    canvas.width = video.clientWidth;
-    canvas.height = video.clientHeight;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (result.faceLandmarks && result.faceLandmarks.length > 0) {
-        const landmarks = result.faceLandmarks[0];
-        checkFocus(landmarks);
-        //Drawing the dots on the eyes:
-        /*
-        const eyeIndices = [468, 473];
-        
-        // Instant color swap based on the timer status
-        ctx.fillStyle = lookAwayStartTime ? "red" : "#00ff2a";
-        
-        eyeIndices.forEach(index => {
-            const point = landmarks[index];
-            ctx.beginPath();
-            ctx.arc(point.x * canvas.width, point.y * canvas.height, 4, 0, 2 * Math.PI);
-            ctx.fill();
-        });
-        */
-    }
-    
 }
 
 async function renderLoop() {
@@ -127,26 +54,42 @@ async function renderLoop() {
         lastVideoTime = video.currentTime;
         if (faceLandmarker) {
             const result = faceLandmarker.detectForVideo(video, performance.now());
-            drawResults(result);
+            if (result.faceLandmarks && result.faceLandmarks.length > 0) {
+                console.log(`[${new Date().toLocaleTimeString()}] AI Status: Face Detected`);
+                checkFocus(result.faceLandmarks[0]);
+            } else {
+                console.warn(`[${new Date().toLocaleTimeString()}] AI Status: No Face Seen`);
+                // If no face detected, treat as looking away
+                if (!lookAwayStartTime) lookAwayStartTime = Date.now();
+                if (Date.now() - lookAwayStartTime > LOOK_AWAY_THRESHOLD) {
+                    setStatus('distracted');
+                }
+            }
         }
     }
     requestAnimationFrame(renderLoop);
 }
 
-async function startCamera() {
+async function init() {
     try {
+        const vision = await window.FilesetResolver.forVisionTasks("lib");
+        faceLandmarker = await window.FaceLandmarker.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: "lib/face_landmarker.task",
+                delegate: "GPU"
+            },
+            runningMode: "VIDEO"
+        });
+
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
         video.onloadedmetadata = () => {
+            video.play();
             renderLoop();
         };
     } catch (err) {
-        console.error("Camera error:", err);
+        console.error("Background camera failed:", err);
     }
 }
 
-(async () => {
-    await initMediaPipe();
-    await startCamera();
-    console.log("Background tracking initiated.");
-})();
+init();

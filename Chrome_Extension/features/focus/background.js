@@ -29,6 +29,7 @@ function startStatsTimer() {
     }, 1000);
 }
 
+// --- Listeners ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'FOCUS_UI_OPEN') {
         closeOffscreen().then(() => {
@@ -45,7 +46,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
             closeOffscreen();
             isDistracted = false;
-    }
+        }
         sendResponse({ ok: true });
     }
 
@@ -63,3 +64,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.runtime.sendMessage({ type: 'STATS_UPDATE', stats: sessionStats }).catch(() => {});
     }
 });
+
+chrome.runtime.onConnect.addListener((port) => {
+    if (port.name === "popup") {
+        port.onDisconnect.addListener(async () => {
+            // Check if the camera was supposed to be active when the popup closed
+            if (cameraShouldBeActive) {
+                console.log("Popup closed: Initializing background camera...");
+                await setupOffscreen();
+            }
+        });
+    }
+});
+
+async function setupOffscreen() {
+    // Check if it already exists to avoid errors
+    const hasDoc = await chrome.offscreen.hasDocument();
+    if (!hasDoc) {
+        try {
+        await chrome.offscreen.createDocument({
+            url: 'features/focus/offscreen.html',
+            reasons: ['USER_MEDIA'],
+            justification: 'Continue eye tracking while popup is closed'
+        });
+        console.log(" Offscreen document created successfully.");
+        } catch (error) {
+            console.error("Failed to create offscreen document:", error);
+        }
+    }
+}

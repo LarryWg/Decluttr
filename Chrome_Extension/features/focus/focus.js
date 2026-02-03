@@ -2,6 +2,9 @@
  * focus.js
  * UI and local eye-tracking logic.
  */
+
+chrome.runtime.connect({ name: "popup" });
+
 import { initTheme } from '../../utils/theme.js';
 initTheme();
 
@@ -156,7 +159,7 @@ function checkFocus(landmarks) {
     // Thresholds
     const isLookingSide = horizontalDiff > 0.035;
     const isLookingUp = verticalDiff < 0.01; 
-    const isLookingDown = verticalDiff > 0.12;
+    const isLookingDown = verticalDiff > 0.10;
 
     const isLookingAway = isLookingSide || isLookingUp || isLookingDown;
 
