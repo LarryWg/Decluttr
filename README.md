@@ -6,11 +6,11 @@ Chrome extension for email management, AI summaries, and productivity tools.
 
 | Layer | Technologies |
 |-------|--------------|
-| **Extension** | Chrome Manifest V3, vanilla JavaScript (ES modules), HTML, CSS |
-| **Backend** | Node.js, Express, OpenAI API, Axios, CORS, dotenv |
-| **Email** | Gmail API, OAuth 2.0, D3.js (Sankey diagrams) |
-| **Focus mode** | Offscreen Documents API, MediaPipe / TensorFlow (face landmarker, WASM) |
-| **UI** | CSS custom properties (theme), popup + multi-page feature UIs |
+| **Extension** | Chrome Manifest V3, vanilla JavaScript, HTML, CSS |
+| **Backend** | Node.js, Express.js, OpenAI API, SerpAPI |
+| **Email** | Gmail API, OAuth 2.0, D3.js (Sankey diagram) |
+| **Focus mode** | MediaPipe / TensorFlow (face landmarker, WASM) |
+
 
 ## Features
 
