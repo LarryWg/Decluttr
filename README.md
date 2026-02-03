@@ -8,23 +8,6 @@
   <strong>📬 AI-Powered Email & Focus for Chrome</strong>
 </p>
 
-<p align="center">
-  <em>Inbox clarity. Focus. Less noise.</em>
-</p>
-
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#the-problem">The Problem</a> •
-  <a href="#our-solution">Our Solution</a> •
-  <a href="#how-it-works">How It Works</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#project-structure">Project Structure</a>
-</p>
-
----
-
 ## 🎯 The Problem
 
 Inboxes are overloaded. Promotions and newsletters compete with what actually matters. At the same time, staying focused is harder than ever—tabs, notifications, and context-switching fragment attention.
@@ -39,10 +22,6 @@ Inboxes are overloaded. Promotions and newsletters compete with what actually ma
 **Decluttr** is a Chrome extension that combines an **AI-powered email assistant** with **focus mode**. It connects to Gmail, uses AI for summaries and categorization, helps you manage promotions and unsubscribe in one place, and adds face-based focus tracking so you stay on task.
 
 Think of it as **“Inbox + Focus in one place”**:
-
-```
-[Gmail + Your behavior] → [AI summaries & categories] → [Clean inbox + Focus sessions]
-```
 
 ---
 
@@ -72,18 +51,6 @@ Think of it as **“Inbox + Focus in one place”**:
 ---
 
 ## 🛠️ How It Works
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Chrome         │────▶│  Backend         │────▶│  Gmail API /    │
-│  Extension      │     │  (Express + AI)  │     │  OpenAI / etc.  │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
-         │                                                        │
-         │              ┌──────────────────┐                      │
-         └─────────────▶│  Email UI /      │◀─────────────────────┘
-                        │  Focus overlay   │
-                        └──────────────────┘
-```
 
 1. **Extension**: You use Email Assistant or Focus from the extension popup/pages.
 2. **Backend**: Email and AI requests go to the Node/Express server (OpenAI, SerpAPI for LinkedIn, etc.).
@@ -212,6 +179,3 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-<p align="center">
-  <strong>Made with ❤️ for a cleaner inbox and better focus</strong>
-</p>
