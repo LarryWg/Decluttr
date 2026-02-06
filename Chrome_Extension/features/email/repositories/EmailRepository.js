@@ -15,6 +15,8 @@ export class EmailRepository {
         this.jobLabelId = null;
         /** Custom auto-labels (id, name, description, gmailLabelId, applyToInbox) - used for filtering and tabs */
         this.customLabels = [];
+        /** In-memory cache for matchCustomLabel results: key = `${emailId}:${labelId}` -> boolean (avoids repeated API calls) */
+        this.customLabelMatchCache = new Map();
     }
 
     setCustomLabels(labels) {
@@ -107,6 +109,15 @@ export class EmailRepository {
 
     clearCache() {
         this.emailCache.clear();
+        this.customLabelMatchCache.clear();
+    }
+
+    getCustomLabelMatchCache(emailId, labelId) {
+        return this.customLabelMatchCache.get(`${emailId}:${labelId}`);
+    }
+
+    setCustomLabelMatchCache(emailId, labelId, match) {
+        this.customLabelMatchCache.set(`${emailId}:${labelId}`, match);
     }
 
     // Inbox management

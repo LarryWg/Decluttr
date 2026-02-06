@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { summarizeEmail, categorizeEmail, detectUnsubscribe, matchCustomLabel } = require('../utils/openai');
+const openaiCache = require('../utils/openaiCache');
 
 // Get OpenAI API key from environment (server-side)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -32,15 +33,16 @@ router.post('/summarize', async (req, res, next) => {
       });
     }
 
-    // Generate summary (includes category and unsubscribe detection)
-    const result = await summarizeEmail(emailContent, OPENAI_API_KEY);
+    const cacheKey = openaiCache.keys.summarize(emailContent);
+    let result = openaiCache.get(cacheKey);
+    if (result) return res.json(result);
 
-    // Also detect unsubscribe links (separate call for accuracy)
+    const rawResult = await summarizeEmail(emailContent, OPENAI_API_KEY);
     const unsubscribeResult = await detectUnsubscribe(emailContent, OPENAI_API_KEY);
-    result.hasUnsubscribe = unsubscribeResult.hasUnsubscribe;
-    result.unsubscribeLink = unsubscribeResult.unsubscribeLink || null;
-
-    res.json(result);
+    rawResult.hasUnsubscribe = unsubscribeResult.hasUnsubscribe;
+    rawResult.unsubscribeLink = unsubscribeResult.unsubscribeLink || null;
+    openaiCache.set(cacheKey, rawResult);
+    res.json(rawResult);
   } catch (error) {
     next(error);
   }
@@ -68,7 +70,11 @@ router.post('/categorize', async (req, res, next) => {
       });
     }
 
-    const result = await categorizeEmail(emailContent, OPENAI_API_KEY);
+    const cacheKey = openaiCache.keys.categorize(emailContent);
+    let result = openaiCache.get(cacheKey);
+    if (result) return res.json(result);
+    result = await categorizeEmail(emailContent, OPENAI_API_KEY);
+    openaiCache.set(cacheKey, result);
     res.json(result);
   } catch (error) {
     next(error);
@@ -125,7 +131,13 @@ router.post('/match-custom-label', async (req, res, next) => {
       });
     }
 
-    const result = await matchCustomLabel(emailContent, labelName.trim(), labelDescription.trim(), OPENAI_API_KEY);
+    const name = labelName.trim();
+    const desc = labelDescription.trim();
+    const cacheKey = openaiCache.keys.matchCustomLabel(emailContent, name, desc);
+    let result = openaiCache.get(cacheKey);
+    if (result) return res.json(result);
+    result = await matchCustomLabel(emailContent, name, desc, OPENAI_API_KEY);
+    openaiCache.set(cacheKey, result);
     res.json(result);
   } catch (error) {
     next(error);

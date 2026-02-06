@@ -717,7 +717,12 @@ class EmailController {
             const content = email.fullContent || (email.subject || '') + '\n' + (email.snippet || '');
             if (!content.trim()) continue;
             try {
-                const { match } = await this.backendApiService.matchCustomLabel(content, label.name, label.description);
+                let match = this.emailRepository.getCustomLabelMatchCache(email.id, label.id);
+                if (match === undefined) {
+                    const res = await this.backendApiService.matchCustomLabel(content, label.name, label.description);
+                    match = res.match;
+                    this.emailRepository.setCustomLabelMatchCache(email.id, label.id, match);
+                }
                 if (match) {
                     const result = await this.gmailApiService.addLabelToMessages([email.id], label.gmailLabelId);
                     if (result.success && result.success.length > 0) {
@@ -809,7 +814,12 @@ class EmailController {
                     const hasLabel = email.labelIds && email.labelIds.includes(label.gmailLabelId);
                     if (hasLabel) continue;
                     try {
-                        const { match } = await this.backendApiService.matchCustomLabel(content, label.name, label.description);
+                        let match = this.emailRepository.getCustomLabelMatchCache(email.id, label.id);
+                        if (match === undefined) {
+                            const res = await this.backendApiService.matchCustomLabel(content, label.name, label.description);
+                            match = res.match;
+                            this.emailRepository.setCustomLabelMatchCache(email.id, label.id, match);
+                        }
                         if (match && applyToGmail) {
                             const result = await this.gmailApiService.addLabelToMessages([email.id], label.gmailLabelId);
                             if (result.success.length > 0) {
